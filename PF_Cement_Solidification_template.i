@@ -7,20 +7,17 @@
   xmin =
   xmax =
   ymin =
-  ymax = 
+  ymax =
   elem_type = QUAD4
 []
 
-[GlobalParams]
-  # let's output all material properties for demonstration purposes
-  outputs = exodus
-[]
-
 [Variables]
-  active = 'phi psi c'
+  active = 'psi phi c'
+
   [./phi]
     order = FIRST
     family = LAGRANGE
+    outputs = exodus
     [./InitialCondition]
       type = FunctionIC
       function = phi_txt
@@ -29,12 +26,14 @@
   [./psi]
     order = FIRST
     family = LAGRANGE
+    outputs = exodus
     [./InitialCondition]
       type = FunctionIC
       function = psi_txt
     [../]
   [../]
   [./c]
+    outputs = exodus
     [./InitialCondition]
       type = FunctionIC
       function = c_txt
@@ -43,7 +42,7 @@
 []
 
 [Kernels]
-  active = 'dphidt ACBulk_phi ACInterface_phi dpsidt ACBulk_psi ACInterface_psi dcdt phi_c psi_c c_diffusion'
+  active = 'dpsidt ACBulk_psi ACInterface_psi psi_phi dphidt ACBulk_phi ACInterface_phi dcdt psi_c phi_c c_diffusion'
 
   #
   # Order parameter phi
@@ -64,6 +63,12 @@
     variable = phi
     mob_name = L_phi
     kappa_name = kappa_phi
+  [../]
+  [./psi_phi]
+    type = CoefCoupledTimeDerivative
+    v = 'psi'
+    variable = phi
+    coef = -1
   [../]
 
   #
@@ -104,7 +109,7 @@
     type = CoefCoupledTimeDerivative
     v = 'psi'
     variable = c
-    coef = 1
+    coef = 2.35
   [../]
   [./c_diffusion]
     type = ACInterface
@@ -115,13 +120,13 @@
 []
 
 [Materials]
-  active = 'consts free_energy_phi free_energy_psi'
+  active = 'consts free_energy_psi free_energy_phi'
 
   [./consts]
     # L_psi or L_phi can be changed to play on the influence of the dissolution/precipitation kinetics
     type = GenericConstantMaterial
     prop_names  = 'L_psi kappa_psi L_phi kappa_phi L_c kappa_c'
-    prop_values = '1 0.01 1 0.01 1 0.05'
+    prop_values = '1 0.03 1 0.03 1 0.05'
   [../]
 
   [./free_energy_phi]
@@ -130,7 +135,7 @@
     f_name = g_phi
     args = 'phi c'
     constant_names = 'W x_c'
-    constant_expressions = '0.032 0.5'
+    constant_expressions =
     function = 'W*16*(phi^2)*((1-phi)^2) - x_c*(c-1)*(phi^2)*(3-2*phi)'
     enable_jit = true
     derivative_order = 2
@@ -141,11 +146,18 @@
     block = 0
     f_name = g_psi
     args = 'psi c'
-    constant_names = 'W x_c'
-    constant_expressions = '0.32 5'
-    function = 'W*16*(psi^2)*((1-psi)^2) - x_c*(c-1)*(psi^2)*(3-2*psi)'
+    constant_names = 'A_psi B_psi C_psi x_c'
+    constant_expressions =
+    function = 'A_psi*psi^4+B_psi*psi^3+C_psi*psi^2 - x_c*(c-1)*(psi^2)*(3-2*psi)'
     enable_jit = true
     derivative_order = 2
+  [../]
+
+  [./var]
+    type = ParsedMaterial
+    property_name = kappa_psi
+    coupled_variables = 'psi'
+    function = 'if(psi>0.5, 0.03, 0.01)'
   [../]
 []
 
@@ -182,23 +194,27 @@
   # so we can safely use NEWTON for a fast solve
   solve_type = 'NEWTON'
 
-  l_max_its = 15
-  l_tol = 1.0e-6
+  l_max_its = 20
+  l_tol = 1.0e-4
+  l_abs_tol = 1.0e-6
 
-  nl_max_its = 50
-  nl_rel_tol = 1.0e-6
+  nl_max_its = 10
+  nl_rel_tol = 1.0e-4
   nl_abs_tol = 1.0e-6
 
   start_time = 0.0
-  end_time   = 5
+  end_time   = 10
 
   [./TimeStepper]
     type = SolutionTimeAdaptiveDT
-    dt = 0.05
+    dt = 0.1
   [../]
 []
 
 [Outputs]
   execute_on = 'initial timestep_end'
   exodus = true
+  [./other]
+    type = VTK
+  [../]
 []

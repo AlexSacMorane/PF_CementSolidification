@@ -22,7 +22,7 @@ def Insert_Grains(dict_sample, dict_user):
     # Initialize the arrays
     M_psi = np.zeros((dict_user['n_mesh'],dict_user['n_mesh']))
     M_phi = np.zeros((dict_user['n_mesh'],dict_user['n_mesh']))
-    M_c = np.ones((dict_user['n_mesh'],dict_user['n_mesh']))
+    M_c = 0.95*np.ones((dict_user['n_mesh'],dict_user['n_mesh']))
 
     # Initialize the mesh lists
     L_x = np.linspace(-dict_user['dim_domain']/2, dict_user['dim_domain']/2, dict_user['n_mesh'])
@@ -51,7 +51,7 @@ def Insert_Grains(dict_sample, dict_user):
                 y_prev = L_center_y_grains[i_prev_grain]
                 R_prev = L_radius_grains[i_prev_grain]
                 Prev = np.array([x_prev, y_prev])
-                if np.linalg.norm(Try-Prev)<R_try+R_prev+dict_user['w_int']:
+                if np.linalg.norm(Try-Prev)<R_try+R_prev+2*dict_user['w_int']:
                     inserted = False
             # Save grain
             if inserted :
@@ -82,11 +82,13 @@ def Insert_Grains(dict_sample, dict_user):
             # Update map
             if d_min <= r_min - dict_user['w_int']/2:
                 M_psi[-1-i_y, i_x] = 1
+                M_phi[-1-i_y, i_x] = 1
             elif d_min >= r_min + dict_user['w_int']/2:
                 M_psi[-1-i_y, i_x] = 0
+                M_phi[-1-i_y, i_x] = 0
             else :
                 M_psi[-1-i_y, i_x] = 0.5*(1+math.cos(math.pi*(d_min-r_min+dict_user['w_int']/2)/dict_user['w_int']))
-                M_phi[-1-i_y, i_x] = 0.5*(1+math.cos(math.pi*(abs(d_min-r_min))/(dict_user['w_int']/2)))
+                M_phi[-1-i_y, i_x] = 0.5*(1+math.cos(math.pi*(d_min-r_min+dict_user['w_int']/2)/dict_user['w_int']))
 
     # Plot maps
     fig, ((ax1),(ax2),(ax3)) = plt.subplots(3,1,figsize=(9,25))
