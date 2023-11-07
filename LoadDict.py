@@ -23,6 +23,8 @@ dict_user = pickle.load(open(name_file_2,'rb'))
 # Work
 #-------------------------------------------------------------------------------
 
-print('dx',dict_sample['L_x'][1]-dict_sample['L_x'][0])
-print('w_int',dict_user['w_int'])
-print('w_int/dx',dict_user['w_int']/(dict_sample['L_x'][1]-dict_sample['L_x'][0]))
+print('A_psi',dict_user['A_psi'])
+print('B_psi',dict_user['B_psi'])
+print('C_psi',dict_user['C_psi'])
+print()
+print('At psi=0:',dict_user['A_psi']*0^4+dict_user['B_psi']*0^3+dict_user['C_psi']*0^2)
