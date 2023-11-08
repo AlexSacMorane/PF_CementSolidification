@@ -126,15 +126,15 @@ def Compute_Sphi_Spsi_Sc(dict_pp, dict_sample, dict_user):
     # psi
     ax1.plot(L_S_psi)
     ax1.set_xlabel('Iteration (-)')
-    ax1.set_title(r'$\Sum\psi$ in the domain',fontsize = title_fontsize)
+    ax1.set_title(r'$\Sigma \psi$ in the domain',fontsize = title_fontsize)
     # phi
     ax2.plot(L_S_phi)
     ax2.set_xlabel('Iteration (-)')
-    ax2.set_title(r'$\Sum\phi$ in the domain',fontsize = title_fontsize)
+    ax2.set_title(r'$\Sigma \phi$ in the domain',fontsize = title_fontsize)
     # c
     ax3.plot(L_S_c)
     ax3.set_xlabel('Iteration (-)')
-    ax3.set_title(r'$\Sum c$ in the domain',fontsize = title_fontsize)
+    ax3.set_title(r'$\Sigma c$ in the domain',fontsize = title_fontsize)
 
     fig.savefig('png/tracker_Ss_psi_phi_c.png')
     plt.close(fig)
