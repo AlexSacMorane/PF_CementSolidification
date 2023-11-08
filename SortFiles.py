@@ -40,3 +40,4 @@ def Sort_vtk(dict_pp):
 
     # save the last iteration
     dict_pp['last_j_str'] = index_to_str(j-1)
+    dict_pp['last_j'] = j-1

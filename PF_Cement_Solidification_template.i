@@ -146,7 +146,7 @@
     block = 0
     f_name = g_psi
     args = 'psi c'
-    constant_names = 'A_psi B_psi C_psi x_c'
+    constant_names = 'A_psi B_psi C_psi E_psi x_c'
     constant_expressions =
     function = 'A_psi*psi^4+B_psi*psi^3+C_psi*psi^2 - x_c*(c-1)*(psi^2)*(3-2*psi)'
     enable_jit = true
