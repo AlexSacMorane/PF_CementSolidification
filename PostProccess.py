@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 # Functions
 #-------------------------------------------------------------------------------
 
-def Compute_Sphi_Spsi_Sc(dict_pp,dict_sample, dict_user):
+def Compute_Sphi_Spsi_Sc(dict_pp, dict_sample, dict_user):
     '''
     Read the data (with .vtk files) and compute over iterations the sum over the sample of phi, psi and c.
     '''
@@ -31,6 +31,7 @@ def Compute_Sphi_Spsi_Sc(dict_pp,dict_sample, dict_user):
     L_S_phi = []
     L_S_psi = []
     L_S_c = []
+    L_L_Work = []
 
     # iterate on the time
     for iteration in range(dict_pp['last_j']+1):
@@ -107,6 +108,14 @@ def Compute_Sphi_Spsi_Sc(dict_pp,dict_sample, dict_user):
                     L_S_phi[-1] = L_S_phi[-1] + L_Work[0][i_XYZ]
                     L_S_psi[-1] = L_S_psi[-1] + L_Work[1][i_XYZ]
                     L_S_c[-1] = L_S_c[-1] + L_Work[2][i_XYZ]
+
+        L_L_Work.append(L_Work)
+
+    # save data
+    dict_pp['L_L_Work'] = L_L_Work
+    dict_pp['L_S_phi'] = L_S_phi
+    dict_pp['L_S_psi'] = L_S_psi
+    dict_pp['L_S_c'] = L_S_c
 
     # plot results
     fig, ((ax1),(ax2),(ax3)) = plt.subplots(3,1,figsize=(16,9))
