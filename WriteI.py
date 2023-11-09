@@ -30,11 +30,9 @@ def Adapt_I(dict_sample, dict_user):
             line = line[:-1] + ' ' + str(min(dict_sample['L_y'])) + '\n'
         if j == 10:
             line = line[:-1] + ' ' + str(max(dict_sample['L_y'])) + '\n'
-        if j == 138:
-            line = line[:-1] + " '" + str(dict_user['Energy_barrier']) + ' ' + str(dict_user['chi_c']) + "'\n"
-        if j == 150:
-            line = line[:-1] + " '" + str(dict_user['A_psi']) + ' ' + str(dict_user['B_psi']) +\
-                                ' ' + str(dict_user['C_psi']) + ' ' + str(dict_user['E_psi']) +\
-                                ' ' + str(dict_user['chi_c']) + "'\n"
+        if j == 132:
+            line = line[:-1] + " '" + str(dict_user['Energy_barrier']) + ' ' + str(dict_user['chi_c_phi']) + "'\n"
+        if j == 144:
+            line = line[:-1] + " '" + str(dict_user['Energy_barrier']) + ' ' + str(dict_user['chi_c_psi']) + "'\n"
         file_to_write.write(line)
     file_to_write.close()

@@ -79,16 +79,22 @@ def Insert_Grains(dict_sample, dict_user):
                 elif np.linalg.norm(Center_grain-Point) < d_min:
                     d_min = np.linalg.norm(Center_grain-Point)
                     r_min = r_grain
-            # Update map
+            # Update map psi
             if d_min <= r_min - dict_user['w_int']/2:
                 M_psi[-1-i_y, i_x] = 1
-                M_phi[-1-i_y, i_x] = 1
             elif d_min >= r_min + dict_user['w_int']/2:
                 M_psi[-1-i_y, i_x] = 0
-                M_phi[-1-i_y, i_x] = 0
             else :
                 M_psi[-1-i_y, i_x] = 0.5*(1+math.cos(math.pi*(d_min-r_min+dict_user['w_int']/2)/dict_user['w_int']))
-                M_phi[-1-i_y, i_x] = 0.5*(1+math.cos(math.pi*(d_min-r_min+dict_user['w_int']/2)/dict_user['w_int']))
+            # Update map phi
+            #if r_min - dict_user['w_int']/2 < d_min and d_min < r_min + dict_user['w_int']/2:
+            #    M_phi[-1-i_y, i_x] = 1
+            #elif r_min + dict_user['w_int']/2 <= d_min and d_min <= r_min + 3*dict_user['w_int']/2:
+            #    M_phi[-1-i_y, i_x] = 0.5*(1+math.cos(math.pi*(d_min-(r_min+dict_user['w_int'])+dict_user['w_int']/2)/dict_user['w_int']))
+            #elif r_min - 3*dict_user['w_int']/2 <= d_min and d_min <= r_min - dict_user['w_int']/2:
+            #    M_phi[-1-i_y, i_x] = 0.5*(1+math.cos(math.pi*(-d_min+(r_min-dict_user['w_int'])+dict_user['w_int']/2)/dict_user['w_int']))
+            #else :
+            #    M_phi[-1-i_y, i_x] = 0
 
     # Plot maps
     fig, ((ax1),(ax2),(ax3)) = plt.subplots(3,1,figsize=(9,25))

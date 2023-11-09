@@ -12,7 +12,7 @@
 []
 
 [Variables]
-  active = 'psi phi c'
+  active = 'phi psi c'
 
   [./phi]
     order = FIRST
@@ -42,7 +42,7 @@
 []
 
 [Kernels]
-  active = 'dpsidt ACBulk_psi ACInterface_psi psi_phi dphidt ACBulk_phi ACInterface_phi dcdt psi_c phi_c c_diffusion'
+  active = 'dphidt ACBulk_phi ACInterface_phi dpsidt ACBulk_psi ACInterface_psi dcdt phi_c psi_c c_diffusion'
 
   #
   # Order parameter phi
@@ -63,12 +63,6 @@
     variable = phi
     mob_name = L_phi
     kappa_name = kappa_phi
-  [../]
-  [./psi_phi]
-    type = CoefCoupledTimeDerivative
-    v = 'psi'
-    variable = phi
-    coef = -1
   [../]
 
   #
@@ -120,13 +114,13 @@
 []
 
 [Materials]
-  active = 'consts free_energy_psi free_energy_phi'
+  active = 'consts free_energy_phi free_energy_psi'
 
   [./consts]
     # L_psi or L_phi can be changed to play on the influence of the dissolution/precipitation kinetics
     type = GenericConstantMaterial
     prop_names  = 'L_psi kappa_psi L_phi kappa_phi L_c kappa_c'
-    prop_values = '1 0.03 1 0.03 1 0.05'
+    prop_values = '1 0.03 1 0.03 1 0.01'
   [../]
 
   [./free_energy_phi]
@@ -136,7 +130,7 @@
     args = 'phi c'
     constant_names = 'W x_c'
     constant_expressions =
-    function = 'W*16*(phi^2)*((1-phi)^2) - x_c*(c-1)*(phi^2)*(3-2*phi)'
+    function = 'W*16*(phi^2)*((1-phi)^2) + x_c*(c-0.95)*(1.50*phi^3-2.03*phi^2-0.45*phi+0.98)'
     enable_jit = true
     derivative_order = 2
   [../]
@@ -146,9 +140,9 @@
     block = 0
     f_name = g_psi
     args = 'psi c'
-    constant_names = 'A_psi B_psi C_psi E_psi x_c'
+    constant_names = 'W x_c'
     constant_expressions =
-    function = 'A_psi*psi^4+B_psi*psi^3+C_psi*psi^2 - x_c*(c-1)*(psi^2)*(3-2*psi)'
+    function = 'W*16*(psi^2)*((1-psi)^2) - x_c*(c-1)*(3*psi^2-2*psi^3)'
     enable_jit = true
     derivative_order = 2
   [../]
@@ -203,7 +197,7 @@
   nl_abs_tol = 1.0e-6
 
   start_time = 0.0
-  end_time   = 10
+  end_time   = 5
 
   [./TimeStepper]
     type = SolutionTimeAdaptiveDT

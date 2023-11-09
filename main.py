@@ -17,54 +17,15 @@ from WriteI import *
 # User
 #------------------------------------------------------------------------------
 
-def find_C_func(C,V,W):
-    '''
-    Link between C, V and W.
-    '''
-    return C**3*(C-4*V)-16*(-3*V+C)**3*(V+W)
-
-#------------------------------------------------------------------------------
-
-def find_C_deriv(C,V,W):
-    '''
-    Derivative of find_C_func (dC).
-    '''
-    return 3*C**2*(C-4*V)+C**3-3*16*(-3*V+C)**2*(V+W)
-
-#-------------------------------------------------------------------------------
-
-def Compute_f_psi(Energy_barrier, Energy_sink):
-    '''
-    Compute the parameters of the free energy used for the phase variable psi.
-
-    The free energy is following the template :
-    f_psi(psi) = A*psi^4+B*psi^3+C*psi^2+E
-    '''
-    # compute E
-    E = -Energy_sink
-    # compute C (Newton-Raphson method)
-    C = 40 # init guess
-    C_tol = 1e-11 # tolerance of the method
-    i_test = 0
-    while i_test < 1000 and abs(find_C_func(C,Energy_sink,Energy_barrier)) > C_tol :
-        i_test = i_test + 1
-        C = C - find_C_func(C,Energy_sink,Energy_barrier)/find_C_deriv(C,Energy_sink,Energy_barrier)
-    # compute A, B (Linear relations)
-    B = 4*Energy_sink-2*C
-    A = Energy_sink-B-C
-    return A, B, C, E
-
-#-------------------------------------------------------------------------------
-
 # Description of the grain (size distribution)
 R = 1 # size of the grain of cement
-R_var = 0.25 # variance of the size of the grao, pf cement
+R_var = 0 # variance of the size of the grao, pf cement
 n_grains = 1 # number of grain to insert
 n_try = 10 # maximum number of insertion try
 
 # Description of the domain (total and insertion)
-dim_domain = 2*1.5*R # size of the study domain
-dim_ins = 0.01*R # size of the grain insertion domain
+dim_domain = 1.5*2*R # size of the study domain
+dim_ins = 0.01 # size of the grain insertion domain
 
 # Description of the mesh
 n_mesh = 250 # number of nodes in one direction of the mesh
@@ -72,9 +33,8 @@ n_mesh = 250 # number of nodes in one direction of the mesh
 # Description of the phase field variables
 w_int = 0.15 # size of the psi interface (PF)
 Energy_barrier = 1 # the energy barrier value used for free energies description
-Energy_sink = 0.2*Energy_barrier # the energy sink used for free energy (on psi) description
-A_psi, B_psi, C_psi, E_psi = Compute_f_psi(Energy_barrier, Energy_sink) # compute the the free energy used for psi
-chi_c = 1. # coefficient used to tilt the free energies (dependent on the c value)
+chi_c_phi = 50. # coefficient used to tilt the free energies phi (dependent on the c value)
+chi_c_psi = 1. # coefficient used to tilt the free energies psi (dependent on the c value)
 
 # create dict
 dict_user = {
@@ -87,12 +47,8 @@ dict_user = {
 'n_mesh': n_mesh,
 'w_int': w_int,
 'Energy_barrier': Energy_barrier,
-'Energy_sink': Energy_sink,
-'A_psi': A_psi,
-'B_psi': B_psi,
-'C_psi': C_psi,
-'E_psi': E_psi,
-'chi_c': chi_c
+'chi_c_phi': chi_c_phi,
+'chi_c_psi': chi_c_psi
 }
 
 #-------------------------------------------------------------------------------
@@ -148,7 +104,7 @@ Sort_vtk(dict_pp)
 
 # Post proccess data
 print('\nPost processing')
-Compute_Sphi_Spsi_Sc(dict_pp,dict_sample, dict_user)
+#Compute_Sphi_Spsi_Sc(dict_pp,dict_sample, dict_user)
 
 #-------------------------------------------------------------------------------
 # Close
