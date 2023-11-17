@@ -3,6 +3,7 @@
 #-------------------------------------------------------------------------------
 
 import pickle
+from PostProccess import *
 
 #-------------------------------------------------------------------------------
 # User
@@ -10,6 +11,7 @@ import pickle
 
 name_file_1 = 'dict/dict_sample.dict'
 name_file_2 = 'dict/dict_user.dict'
+name_file_3 = 'dict/dict_pp.dict'
 
 #-------------------------------------------------------------------------------
 # Load
@@ -18,13 +20,10 @@ name_file_2 = 'dict/dict_user.dict'
 # Save dicts
 dict_sample = pickle.load(open(name_file_1,'rb'))
 dict_user = pickle.load(open(name_file_2,'rb'))
+dict_pp = pickle.load(open(name_file_3,'rb'))
 
 #-------------------------------------------------------------------------------
 # Work
 #-------------------------------------------------------------------------------
 
-print('A_psi',dict_user['A_psi'])
-print('B_psi',dict_user['B_psi'])
-print('C_psi',dict_user['C_psi'])
-print()
-print('At psi=0:',dict_user['A_psi']*0^4+dict_user['B_psi']*0^3+dict_user['C_psi']*0^2)
+Compute_Sphi_Spsi_Sc(dict_pp, dict_sample, dict_user)

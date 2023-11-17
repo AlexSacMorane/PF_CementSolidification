@@ -86,7 +86,7 @@ def Insert_Grains(dict_sample, dict_user):
                 M_psi[-1-i_y, i_x] = 0
             else :
                 M_psi[-1-i_y, i_x] = 0.5*(1+math.cos(math.pi*(d_min-r_min+dict_user['w_int']/2)/dict_user['w_int']))
-                
+
     # Plot maps
     fig, ((ax1),(ax2),(ax3)) = plt.subplots(3,1,figsize=(9,25))
 

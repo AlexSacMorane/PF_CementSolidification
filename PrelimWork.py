@@ -4,36 +4,31 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+import vtk
+from vtk.util.numpy_support import vtk_to_numpy
 
 #-------------------------------------------------------------------------------
 # User
 #-------------------------------------------------------------------------------
 
-def f_loc(eta, c):
-    W = 0.32
-    x_c = 1
-    f_loc_res = 16*W*(eta**2)*((1-eta)**2) - x_c*(c-1)*(eta**2)*(3-2*eta)
-    return f_loc_res
+namefile = 'vtk/PF_Cement_Solidification_other_000_0.vtu'
 
 #-------------------------------------------------------------------------------
 # Work
 #-------------------------------------------------------------------------------
 
-# Create data
-L_c = [0.8, 0.9, 1, 1.1, 1.2]
-L_eta = np.linspace(-0.1,1.1,100)
+# load a vtk file as input
+reader = vtk.vtkXMLUnstructuredGridReader()
+reader.SetFileName(namefile)
+reader.Update()
 
-# Create plot
-fig, (ax1) = plt.subplots(1,1,figsize=(16,9))
+#Grab a scalar from the vtk file
+my_vtk_array = reader.GetOutput().GetPointData().GetArray("phi")
 
-# main
-for c in L_c :
-    L_f_loc = []
-    for eta in L_eta :
-        L_f_loc.append(f_loc(eta,c))
-    # plot
-    ax1.plot(L_eta, L_f_loc, label='c = '+str(c))
+#Get the coordinates of the nodes and the scalar values
+nodes_nummpy_array = vtk_to_numpy(nodes_vtk_array)
+my_numpy_array = vtk_to_numpy(my_vtk_array )
 
-ax1.legend()
-fig.savefig('png/f_loc.png')
-plt.close(fig)
+x,y,z = nodes_nummpy_array[:,0],\
+        nodes_nummpy_array[:,1],\
+        nodes_nummpy_array[:,2]

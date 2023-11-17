@@ -54,7 +54,7 @@
   [./ACBulk_phi]
     type = AllenCahn
     variable = phi
-    args = 'c'
+    coupled_variables = 'c'
     mob_name = L_phi
     f_name = g_phi
   [../]
@@ -75,7 +75,7 @@
   [./ACBulk_psi]
     type = AllenCahn
     variable = psi
-    args = 'c'
+    coupled_variables = 'c'
     mob_name = L_psi
     f_name = g_psi
   [../]
@@ -114,23 +114,23 @@
 []
 
 [Materials]
-  active = 'consts free_energy_phi free_energy_psi'
+  active = 'var consts free_energy_phi free_energy_psi'
 
   [./consts]
     # L_psi or L_phi can be changed to play on the influence of the dissolution/precipitation kinetics
     type = GenericConstantMaterial
-    prop_names  = 'L_psi kappa_psi L_phi kappa_phi L_c kappa_c'
-    prop_values = '1 0.03 1 0.03 1 0.01'
+    prop_names  = 'L_psi kappa_psi L_phi kappa_phi L_c'
+    prop_values = '1 0.03 1 0.03 1'
   [../]
 
   [./free_energy_phi]
     type = DerivativeParsedMaterial
     block = 0
-    f_name = g_phi
-    args = 'phi c'
+    property_name = g_phi
+    coupled_variables = 'phi c'
     constant_names = 'W x_c'
     constant_expressions =
-    function = 'W*16*(phi^2)*((1-phi)^2) + x_c*(c-0.95)*(1.50*phi^3-2.03*phi^2-0.45*phi+0.98)'
+    expression = 'W*16*(phi^2)*((1-phi)^2) + x_c*(c-0.95)*(1.50*phi^3-2.03*phi^2-0.45*phi+0.98)'
     enable_jit = true
     derivative_order = 2
   [../]
@@ -138,20 +138,21 @@
   [./free_energy_psi]
     type = DerivativeParsedMaterial
     block = 0
-    f_name = g_psi
-    args = 'psi c'
+    property_name = g_psi
+    coupled_variables = 'psi c'
     constant_names = 'W x_c'
     constant_expressions =
-    function = 'W*16*(psi^2)*((1-psi)^2) - x_c*(c-1)*(3*psi^2-2*psi^3)'
+    expression = 'W*16*(psi^2)*((1-psi)^2) - x_c*(c-1)*(3*psi^2-2*psi^3)'
     enable_jit = true
     derivative_order = 2
   [../]
 
   [./var]
     type = ParsedMaterial
-    property_name = kappa_psi
+    property_name = kappa_c
     coupled_variables = 'psi'
-    function = 'if(psi>0.5, 0.03, 0.01)'
+    expression = '0.7*(1-psi^3*(6*psi^2-15*psi+10))'
+    outputs = exodus
   [../]
 []
 
@@ -197,11 +198,11 @@
   nl_abs_tol = 1.0e-6
 
   start_time = 0.0
-  end_time   = 5
+  end_time   = 25
 
   [./TimeStepper]
     type = SolutionTimeAdaptiveDT
-    dt = 0.1
+    dt = 0.05
   [../]
 []
 

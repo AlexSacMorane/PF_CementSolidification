@@ -24,11 +24,11 @@ n_grains = 1 # number of grain to insert
 n_try = 10 # maximum number of insertion try
 
 # Description of the domain (total and insertion)
-dim_domain = 1.5*2*R # size of the study domain
+dim_domain = 2*2*R # size of the study domain
 dim_ins = 0.01 # size of the grain insertion domain
 
 # Description of the mesh
-n_mesh = 250 # number of nodes in one direction of the mesh
+n_mesh = 200 # number of nodes in one direction of the mesh
 
 # Description of the phase field variables
 w_int = 0.15 # size of the psi interface (PF)
@@ -104,7 +104,7 @@ Sort_vtk(dict_pp)
 
 # Post proccess data
 print('\nPost processing')
-#Compute_Sphi_Spsi_Sc(dict_pp,dict_sample, dict_user)
+Compute_Sphi_Spsi_Sc(dict_pp,dict_sample, dict_user)
 
 #-------------------------------------------------------------------------------
 # Close

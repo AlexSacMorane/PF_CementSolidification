@@ -2,8 +2,13 @@
 # Librairies
 #-------------------------------------------------------------------------------
 
-from SortFiles import index_to_str
 import matplotlib.pyplot as plt
+import numpy as np
+import vtk
+from vtk.util.numpy_support import vtk_to_numpy
+
+#Own
+from SortFiles import index_to_str
 
 #-------------------------------------------------------------------------------
 # Functions
@@ -14,24 +19,13 @@ def Compute_Sphi_Spsi_Sc(dict_pp, dict_sample, dict_user):
     Read the data (with .vtk files) and compute over iterations the sum over the sample of phi, psi and c.
     '''
 
-    #---------------------------------------------------------------------------
-    # Read files
-    #---------------------------------------------------------------------------
-
-    # global parameters
-    id_L = None
-    phi_selector_len = len('        <DataArray type="Float64" Name="phi')
-    psi_selector_len = len('        <DataArray type="Float64" Name="psi')
-    c_selector_len = len('        <DataArray type="Float64" Name="c')
-    XYZ_selector_len = len('        <DataArray type="Float64" Name="Points"')
-    data_jump_len = len('          ')
-    end_len = len('        </DataArray>')
-
     # Initialize
     L_S_phi = []
     L_S_psi = []
     L_S_c = []
     L_L_Work = []
+    template_file = 'vtk/PF_Cement_Solidification_other_'
+    dict_pp['L_L_i_XYZ_not_used'] = None
 
     # iterate on the time
     for iteration in range(dict_pp['last_j']+1):
@@ -43,73 +37,70 @@ def Compute_Sphi_Spsi_Sc(dict_pp, dict_sample, dict_user):
         L_S_psi.append(0)
         L_S_c.append(0)
         L_XYZ_used = []
+        # Help the algorithm to know which node to used
+        if dict_pp['L_L_i_XYZ_not_used'] == None:
+            L_L_i_XYZ_not_used = []
 
         # iterate on the proccessors used
         for i_proc in range(6):
 
-            # prepare reading
-            L_Work = [[], #phi
-                      [], #psi
-                      [], # c
-                      []] #XYZ
+            # name of the file to load
+            namefile = template_file+iteration_str+'_'+str(i_proc)+'.vtu'
 
-            # read lines
-            f = open(f'vtk/PF_Cement_Solidification_other_{iteration_str}_{i_proc}.vtu','r')
-            data = f.read()
-            f.close()
-            lines = data.splitlines()
+            # load a vtk file as input
+            reader = vtk.vtkXMLUnstructuredGridReader()
+            reader.SetFileName(namefile)
+            reader.Update()
 
-            # read lines
-            for line in lines:
+            #Grab a scalar from the vtk file
+            nodes_vtk_array= reader.GetOutput().GetPoints().GetData()
+            psi_vtk_array = reader.GetOutput().GetPointData().GetArray("psi")
+            phi_vtk_array = reader.GetOutput().GetPointData().GetArray("phi")
+            c_vtk_array = reader.GetOutput().GetPointData().GetArray("c")
 
-                # detect what I am reading
-                if line[0:phi_selector_len] == '        <DataArray type="Float64" Name="phi':
-                    id_L = 0
-                if line[0:psi_selector_len] == '        <DataArray type="Float64" Name="psi':
-                    id_L = 1
-                if line[0:c_selector_len] == '        <DataArray type="Float64" Name="c':
-                    id_L = 2
-                if line[0:XYZ_selector_len] == '        <DataArray type="Float64" Name="Points"':
-                    id_L = 3
-                if (line[0:end_len] == '        </DataArray>' or  line[0:len('          <InformationKey')] == '          <InformationKey') and id_L != None:
-                    id_L = None
+            #Get the coordinates of the nodes and the scalar values
+            nodes_array = vtk_to_numpy(nodes_vtk_array)
+            psi_array = vtk_to_numpy(psi_vtk_array)
+            phi_array = vtk_to_numpy(phi_vtk_array)
+            c_array = vtk_to_numpy(c_vtk_array)
 
-                # read
-                if line[0:data_jump_len] == '          ' and id_L in [0,1,2]: #Read phi, psi or c
-                    line = line[data_jump_len:]
-                    c_start = 0
-                    for c_i in range(0,len(line)):
-                        if line[c_i]==' ':
-                            c_end = c_i
-                            L_Work[id_L].append(float(line[c_start:c_end]))
-                            c_start = c_i+1
-                    L_Work[id_L].append(float(line[c_start:]))
-                elif line[0:data_jump_len] == '          ' and id_L == 3: #Read [X, Y, Z]
-                    line = line[data_jump_len:]
-                    XYZ_temp = []
-                    c_start = 0
-                    for c_i in range(0,len(line)):
-                        if line[c_i]==' ':
-                            c_end = c_i
-                            XYZ_temp.append(float(line[c_start:c_end]))
-                            if len(XYZ_temp)==3:
-                                L_Work[id_L].append(XYZ_temp)
-                                XYZ_temp = []
-                            c_start = c_i+1
-                    XYZ_temp.append(float(line[c_start:]))
-                    L_Work[id_L].append(XYZ_temp)
+            # Help the algorithm to know which nodes to used
+            if dict_pp['L_L_i_XYZ_not_used'] == None:
+                L_i_XYZ_not_used = []
 
             # Compute S_phi, S_psi, S_c
-            for i_XYZ in range(len(L_Work[3])) :
-                XYZ = L_Work[3][i_XYZ]
-                # Do not consider twice a point
-                if XYZ not in L_XYZ_used :
-                    L_XYZ_used.append(XYZ)
-                    L_S_phi[-1] = L_S_phi[-1] + L_Work[0][i_XYZ]
-                    L_S_psi[-1] = L_S_psi[-1] + L_Work[1][i_XYZ]
-                    L_S_c[-1] = L_S_c[-1] + L_Work[2][i_XYZ]
+            if dict_pp['L_L_i_XYZ_not_used'] == None:
+                for i_XYZ in range(len(nodes_array)) :
+                    XYZ = nodes_array[i_XYZ]
+                    # Do not consider twice a point
+                    if list(XYZ) not in L_XYZ_used :
+                        L_XYZ_used.append(list(XYZ))
+                        L_S_phi[-1] = L_S_phi[-1] + phi_array[i_XYZ]
+                        L_S_psi[-1] = L_S_psi[-1] + psi_array[i_XYZ]
+                        L_S_c[-1] = L_S_c[-1] + c_array[i_XYZ]
+                    # Help the algorithm to know which nodes to used
+                    else :
+                        L_i_XYZ_not_used.append(i_XYZ)
+            # Algorithm knows already where to look
+            else :
+                L_i_XYZ_not_used = dict_pp['L_L_i_XYZ_not_used'][i_proc]
+                # all data are considered
+                if L_i_XYZ_not_used == []:
+                    L_S_phi[-1] = L_S_phi[-1] + np.sum(phi_array)
+                    L_S_psi[-1] = L_S_psi[-1] + np.sum(phi_array)
+                    L_S_c[-1] = L_S_c[-1] + np.sum(c_array)
+                # not all data are considered
+                else :
+                    L_S_phi[-1] = L_S_phi[-1] + np.sum(phi_array[:L_i_XYZ_not_used[0]])
+                    L_S_psi[-1] = L_S_psi[-1] + np.sum(psi_array[:L_i_XYZ_not_used[0]])
+                    L_S_c[-1] = L_S_c[-1] + np.sum(c_array[:L_i_XYZ_not_used[0]])
 
-        L_L_Work.append(L_Work)
+            # Help the algorithm to know which nodes to used
+            L_L_i_XYZ_not_used.append(L_i_XYZ_not_used)
+
+        # Help the algorithm to know which nodes to used
+        if dict_pp['L_L_i_XYZ_not_used'] == None:
+            dict_pp['L_L_i_XYZ_not_used'] = L_L_i_XYZ_not_used
 
     # save data
     dict_pp['L_L_Work'] = L_L_Work
