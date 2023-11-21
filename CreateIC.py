@@ -51,7 +51,7 @@ def Insert_Grains(dict_sample, dict_user):
                 y_prev = L_center_y_grains[i_prev_grain]
                 R_prev = L_radius_grains[i_prev_grain]
                 Prev = np.array([x_prev, y_prev])
-                if np.linalg.norm(Try-Prev)<R_try+R_prev+2*dict_user['w_int']:
+                if np.linalg.norm(Try-Prev)<R_try+R_prev+2*(6*dict_user['d_mesh']):
                     inserted = False
             # Save grain
             if inserted :
@@ -80,12 +80,12 @@ def Insert_Grains(dict_sample, dict_user):
                     d_min = np.linalg.norm(Center_grain-Point)
                     r_min = r_grain
             # Update map psi
-            if d_min <= r_min - dict_user['w_int']/2:
+            if d_min <= r_min - (6*dict_user['d_mesh'])/2:
                 M_psi[-1-i_y, i_x] = 1
-            elif d_min >= r_min + dict_user['w_int']/2:
+            elif d_min >= r_min + (6*dict_user['d_mesh'])/2:
                 M_psi[-1-i_y, i_x] = 0
             else :
-                M_psi[-1-i_y, i_x] = 0.5*(1+math.cos(math.pi*(d_min-r_min+dict_user['w_int']/2)/dict_user['w_int']))
+                M_psi[-1-i_y, i_x] = 0.5*(1+math.cos(math.pi*(d_min-r_min+(6*dict_user['d_mesh'])/2)/(6*dict_user['d_mesh'])))
 
     # Plot maps
     fig, ((ax1),(ax2),(ax3)) = plt.subplots(3,1,figsize=(9,25))

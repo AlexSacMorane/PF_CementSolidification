@@ -30,6 +30,9 @@ def Adapt_I(dict_sample, dict_user):
             line = line[:-1] + ' ' + str(min(dict_sample['L_y'])) + '\n'
         if j == 10:
             line = line[:-1] + ' ' + str(max(dict_sample['L_y'])) + '\n'
+        if j == 123:
+            line = line[:-1] + " '" + str(dict_user['L']) + ' ' + str(dict_user['kappa']) + ' '\
+                                    + str(dict_user['L']) + ' ' + str(dict_user['kappa']) + " 1'\n"
         if j == 132:
             line = line[:-1] + " '" + str(dict_user['Energy_barrier']) + ' ' + str(dict_user['chi_c_phi']) + "'\n"
         if j == 144:

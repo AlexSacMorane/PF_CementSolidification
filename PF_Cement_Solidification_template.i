@@ -120,7 +120,7 @@
     # L_psi or L_phi can be changed to play on the influence of the dissolution/precipitation kinetics
     type = GenericConstantMaterial
     prop_names  = 'L_psi kappa_psi L_phi kappa_phi L_c'
-    prop_values = '1 0.03 1 0.03 1'
+    prop_values =
   [../]
 
   [./free_energy_phi]
@@ -132,7 +132,7 @@
     constant_expressions =
     expression = 'W*16*(phi^2)*((1-phi)^2) + x_c*(c-0.95)*(1.50*phi^3-2.03*phi^2-0.45*phi+0.98)'
     enable_jit = true
-    derivative_order = 2
+    derivative_order = 1
   [../]
 
   [./free_energy_psi]
@@ -144,15 +144,14 @@
     constant_expressions =
     expression = 'W*16*(psi^2)*((1-psi)^2) - x_c*(c-1)*(3*psi^2-2*psi^3)'
     enable_jit = true
-    derivative_order = 2
+    derivative_order = 1
   [../]
 
   [./var]
     type = ParsedMaterial
     property_name = kappa_c
-    coupled_variables = 'psi'
-    expression = '0.7*(1-psi^3*(6*psi^2-15*psi+10))'
-    outputs = exodus
+    coupled_variables = 'psi phi'
+    expression = '0.7*(1-psi^3*(6*psi^2-15*psi+10))*exp(-15*phi)'
   [../]
 []
 
@@ -190,19 +189,19 @@
   solve_type = 'NEWTON'
 
   l_max_its = 20
-  l_tol = 1.0e-4
-  l_abs_tol = 1.0e-6
+  l_tol = 1.0e-3
+  l_abs_tol = 1.0e-5
 
   nl_max_its = 10
-  nl_rel_tol = 1.0e-4
-  nl_abs_tol = 1.0e-6
+  nl_rel_tol = 1.0e-3
+  nl_abs_tol = 1.0e-5
 
   start_time = 0.0
-  end_time   = 25
+  end_time   = 20
 
   [./TimeStepper]
     type = SolutionTimeAdaptiveDT
-    dt = 0.05
+    dt = 0.01
   [../]
 []
 

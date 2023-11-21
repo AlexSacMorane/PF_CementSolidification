@@ -26,4 +26,4 @@ dict_pp = pickle.load(open(name_file_3,'rb'))
 # Work
 #-------------------------------------------------------------------------------
 
-Compute_Sphi_Spsi_Sc(dict_pp, dict_sample, dict_user)
+print(dict_pp['L_M_psi'])
