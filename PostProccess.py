@@ -125,9 +125,9 @@ def Read_data(dict_pp, dict_sample, dict_user):
                         L_c = L_c + list(c_array)
                     # not all data are considered
                     else :
-                        L_phi = list(phi_array) + list(phi_array[:L_i_XYZ_not_used[0]])
-                        L_psi = list(psi_array) + list(psi_array[:L_i_XYZ_not_used[0]])
-                        L_c = list(c_array) + list(c_array[:L_i_XYZ_not_used[0]])
+                        L_phi = list(L_phi) + list(phi_array[:L_i_XYZ_not_used[0]])
+                        L_psi = list(L_psi) + list(psi_array[:L_i_XYZ_not_used[0]])
+                        L_c = list(L_c) + list(c_array[:L_i_XYZ_not_used[0]])
 
                 # Help the algorithm to know which nodes to used
                 if dict_pp['L_L_i_XYZ_not_used'] == None:
@@ -270,7 +270,7 @@ def Compute_Mphi_Mpsi_Mc(dict_pp, dict_sample, dict_user):
 
 def Compute_macro_micro_porosity(dict_pp, dict_sample, dict_user):
     '''
-    Compute the macro porosity (gel+source) and the micro (gel).
+    Compute the macro (gel+source) and the micro (gel) porosities.
     '''
     L_p_macro = []
     L_p_micro = []
@@ -282,7 +282,6 @@ def Compute_macro_micro_porosity(dict_pp, dict_sample, dict_user):
         # Initialization
         S_p_macro = 0
         S_p_micro = 0
-        S_psi = 0
 
         # iterate on the domain
         for i in range(len(dict_pp['L_L_psi'][iteration])):
@@ -293,7 +292,7 @@ def Compute_macro_micro_porosity(dict_pp, dict_sample, dict_user):
             if dict_pp['L_L_phi'][iteration][i] >= 0.5:
                 S_p_micro = S_p_micro + (1-dict_pp['L_L_phi'][iteration][i])
         # xi
-        S_psi = S_psi + np.sum(dict_pp['L_L_psi'][iteration])
+        S_psi = np.sum(dict_pp['L_L_psi'][iteration])
 
         if M_psi_0 == None:
             M_psi_0 = S_psi/len(dict_pp['L_L_psi'][iteration])
@@ -323,4 +322,61 @@ def Compute_macro_micro_porosity(dict_pp, dict_sample, dict_user):
     ax4.set_ylabel(r'$p_{micro}$')
 
     fig.savefig('png/tracker_p_macro_micro.png')
+    plt.close(fig)
+
+#-------------------------------------------------------------------------------
+
+def Compute_SpecificSurf(dict_pp, dict_sample, dict_user):
+    '''
+    Compute the specific surface of the gel.
+    '''
+    L_spec_surf = []
+    L_xi = []
+    M_psi_0 = None
+
+    # iterate on the time
+    for iteration in range(len(dict_pp['L_L_phi'])):
+
+        # Read mesh
+        L_x = dict_sample['L_x']
+        L_y = dict_sample['L_y']
+
+        # Rebuild phi array
+        M_phi = np.array(np.zeros((dict_user['n_mesh']+1,dict_user['n_mesh']+1)))
+        # iterate on the domain
+        for i in range(len(dict_pp['L_L_phi'][iteration])):
+            # interpolate meshes
+            find_ix = abs(np.array(L_x)-dict_pp['L_XYZ'][i][0])
+            find_iy = abs(np.array(L_x)-dict_pp['L_XYZ'][i][1])
+            i_x = list(find_ix).index(min(find_ix))
+            i_y = list(find_iy).index(min(find_iy))
+            # rebuild
+            M_phi[-1-i_y,i_x] = dict_pp['L_L_phi'][iteration][i]
+
+        # Compute the gradient
+        grad_x_cst, grad_y_cst = np.gradient(M_phi,L_x[1]-L_x[0],L_y[1]-L_y[0])
+        # compute the norm of the gradient
+        norm_grad = np.sqrt(grad_x_cst*grad_x_cst + grad_y_cst*grad_y_cst)
+
+        # xi
+        S_psi = np.sum(dict_pp['L_L_psi'][iteration])
+        if M_psi_0 == None:
+            M_psi_0 = S_psi/len(dict_pp['L_L_psi'][iteration])
+
+        # Compute mean
+        L_spec_surf.append(np.mean(norm_grad))
+        L_xi.append(1-(S_psi/len(dict_pp['L_L_psi'][iteration]))/M_psi_0)
+
+    # plot results
+    fig, (ax1,ax2) = plt.subplots(1,2,figsize=(16,9))
+
+    ax1.plot(L_spec_surf)
+    ax1.set_xlabel('Iteration (-)')
+    ax1.set_ylabel('Equivalent to Specific Surface (m-1)')
+
+    ax2.plot(L_xi, L_spec_surf)
+    ax2.set_xlabel(r'$\xi$ (-)')
+    ax2.set_ylabel(r'Equivalent to Specific Surface (m-1)')
+
+    fig.savefig('png/tracker_specific_surf.png')
     plt.close(fig)

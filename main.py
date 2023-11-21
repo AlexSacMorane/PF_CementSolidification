@@ -134,6 +134,7 @@ Read_data(dict_pp, dict_sample, dict_user)
 Compute_Sphi_Spsi_Sc(dict_pp, dict_sample, dict_user)
 Compute_Mphi_Mpsi_Mc(dict_pp, dict_sample, dict_user)
 Compute_macro_micro_porosity(dict_pp, dict_sample, dict_user)
+Compute_SpecificSurf(dict_pp, dict_sample, dict_user)
 
 #-------------------------------------------------------------------------------
 # Close

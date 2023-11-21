@@ -151,7 +151,7 @@
     type = ParsedMaterial
     property_name = kappa_c
     coupled_variables = 'psi phi'
-    expression = '0.7*(1-psi^3*(6*psi^2-15*psi+10))*exp(-15*phi)'
+    expression = '0.7*(1-psi^3*(6*psi^2-15*psi+10))*exp(-0*phi)'
   [../]
 []
 
@@ -198,10 +198,11 @@
 
   start_time = 0.0
   end_time   = 20
+  num_steps = 10
 
   [./TimeStepper]
     type = SolutionTimeAdaptiveDT
-    dt = 0.01
+    dt = 0.005
   [../]
 []
 
