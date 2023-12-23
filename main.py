@@ -18,18 +18,24 @@ from WriteI import *
 # User
 #------------------------------------------------------------------------------
 
-# Description of the grain (size distribution)
-R = 1 # size of the grain of cement
-R_var = 0.2 # variance of the size of the grao, pf cement
-n_grains = 1 # number of grain to insert
-n_try = 50 # maximum number of insertion try
+# Definition of the IC
+# Available : Petersen, Spheres
+IC_mode = 'Petersen'
 
-# Description of the domain (total and insertion)
-dim_domain = 2*2*R # size of the study domain
-dim_ins = 0.01 # size of the grain insertion domain
+if IC_mode=='Spheres' :
+    # Description of the grain (size distribution)
+    R = 1 # size of the grain of cement
+    R_var = 0.2 # variance of the size of the grao, pf cement
+    n_grains = 1 # number of grain to insert
+    n_try = 50 # maximum number of insertion try
+    # Description of the domain (insertion)
+    dim_ins = 0.01 # size of the grain insertion domain
+
+# Description of the domain (total)
+dim_domain = 0.5 # size of the study domain
 
 # Description of the mesh
-n_mesh = 160 # number of element in one direction of the mesh
+n_mesh = 300 # number of element in one direction of the mesh
              # the number of nodes is n_mesh+1
 d_mesh = dim_domain/n_mesh # size of the mesh element
 
@@ -38,7 +44,7 @@ Energy_barrier = 1 # the energy barrier value used for free energies description
 kappa = 59.5*Energy_barrier*d_mesh*d_mesh # gradient coefficient for free energies phi/psi
 Mobility = 0.2 # kinetic of free energies evolution (phi/psi)
 L = 0.12*Mobility/d_mesh # Mobility value used for free energies (phi/psi)
-chi_c_phi = 100*Energy_barrier # coefficient used to tilt the free energies phi (dependent on the c value)
+chi_c_phi = 200*Energy_barrier # coefficient used to tilt the free energies phi (dependent on the c value)
 chi_c_psi = 10*Energy_barrier # coefficient used to tilt the free energies psi (dependent on the c value)
 
 # computing information
@@ -49,12 +55,8 @@ tic = time.perf_counter()
 
 # create dict
 dict_user = {
-'R': R,
-'R_var': R_var,
-'n_grains': n_grains,
-'n_try': n_try,
+'IC_mode': IC_mode,
 'dim_domain': dim_domain,
-'dim_ins': dim_ins,
 'n_mesh': n_mesh,
 'd_mesh': d_mesh,
 'Energy_barrier': Energy_barrier,
@@ -65,6 +67,13 @@ dict_user = {
 'n_proc': n_proc,
 'tic': tic
 }
+
+if IC_mode=='Spheres' :
+    dict_user['R'] = R
+    dict_user['R_var'] = R_var
+    dict_user['n_grains'] = n_grains
+    dict_user['n_try'] = n_try
+    dict_user['dim_ins'] = dim_ins
 
 #-------------------------------------------------------------------------------
 # Prepare simulation
@@ -93,7 +102,10 @@ dict_sample = {}
 #-------------------------------------------------------------------------------
 
 # Create initial configuration
-Insert_Grains(dict_sample, dict_user)
+if dict_user['IC_mode']=='Spheres':
+    Insert_Grains(dict_sample, dict_user)
+if dict_user['IC_mode']=='Petersen':
+    Create_Petersen(dict_sample, dict_user)
 
 # Write .i
 Adapt_I(dict_sample, dict_user)
@@ -116,13 +128,12 @@ print('\nEnd of the simulation')
 #-------------------------------------------------------------------------------
 
 # parameters for post proccess
-max_ite = 150
+max_ite = 20
 
 # create empty dict
 dict_pp = {
 'max_ite': max_ite
 }
-
 
 # Sort .vtk files
 Sort_vtk(dict_pp, dict_user)
@@ -135,6 +146,9 @@ Compute_Sphi_Spsi_Sc(dict_pp, dict_sample, dict_user)
 Compute_Mphi_Mpsi_Mc(dict_pp, dict_sample, dict_user)
 Compute_macro_micro_porosity(dict_pp, dict_sample, dict_user)
 Compute_SpecificSurf(dict_pp, dict_sample, dict_user)
+Compute_DegreeHydration(dict_pp, dict_sample, dict_user)
+Compute_ChordLenght_Density_Func(dict_pp, dict_sample, dict_user)
+Compute_PoreSize_Func(dict_pp, dict_sample, dict_user)
 
 #-------------------------------------------------------------------------------
 # Close

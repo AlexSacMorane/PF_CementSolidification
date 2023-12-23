@@ -4,8 +4,14 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+import math
 import vtk
 from vtk.util.numpy_support import vtk_to_numpy
+from pathlib import Path
+import os
+import shutil
+import random
+import skfmm
 
 #Own
 from SortFiles import index_to_str
@@ -14,10 +20,23 @@ from SortFiles import index_to_str
 # Functions
 #-------------------------------------------------------------------------------
 
+def Create_Folder(name_folder):
+    '''
+    Create a new folder. Delete previous with the same name.
+    '''
+    if Path(name_folder).exists():
+        shutil.rmtree(name_folder)
+    os.mkdir(name_folder)
+
+#-------------------------------------------------------------------------------
+
 def Read_data(dict_pp, dict_sample, dict_user):
     '''
     Read the data (with .vtk files).
     '''
+    print('\nRead data')
+    print('The first iteration is longer than the others\n')
+
     # template of the files read
     template_file = 'vtk/PF_Cement_Solidification_other_'
     # Initialization
@@ -167,6 +186,8 @@ def Compute_Sphi_Spsi_Sc(dict_pp, dict_sample, dict_user):
     '''
     Compute over iterations the sum over the sample of phi, psi and c.
     '''
+    print('\nCompute the sum over the sample of :')
+    print('phi, psi and c\n')
 
     # Initialize
     L_S_phi = []
@@ -221,6 +242,8 @@ def Compute_Mphi_Mpsi_Mc(dict_pp, dict_sample, dict_user):
     '''
     Compute over iterations the mean over the sample of phi, psi and c.
     '''
+    print('\nCompute the mean value of :')
+    print('phi, psi and c\n')
 
     # Initialize
     L_M_phi = []
@@ -272,6 +295,8 @@ def Compute_macro_micro_porosity(dict_pp, dict_sample, dict_user):
     '''
     Compute the macro (gel+source) and the micro (gel) porosities.
     '''
+    print('\nCompute the macro and micro porosities\n')
+
     L_p_macro = []
     L_p_micro = []
     L_xi = []
@@ -321,6 +346,10 @@ def Compute_macro_micro_porosity(dict_pp, dict_sample, dict_user):
     ax4.set_xlabel(r'$\xi$ (-)')
     ax4.set_ylabel(r'$p_{micro}$')
 
+    plt.suptitle('Porosity')
+    ax1.set_title('Macro = Gel + Source')
+    ax2.set_title('Micro = Gel')
+
     fig.savefig('png/tracker_p_macro_micro.png')
     plt.close(fig)
 
@@ -330,6 +359,8 @@ def Compute_SpecificSurf(dict_pp, dict_sample, dict_user):
     '''
     Compute the specific surface of the gel.
     '''
+    print('\nCompute the specific surface of the gel\n')
+
     L_spec_surf = []
     L_xi = []
     M_psi_0 = None
@@ -347,7 +378,7 @@ def Compute_SpecificSurf(dict_pp, dict_sample, dict_user):
         for i in range(len(dict_pp['L_L_phi'][iteration])):
             # interpolate meshes
             find_ix = abs(np.array(L_x)-dict_pp['L_XYZ'][i][0])
-            find_iy = abs(np.array(L_x)-dict_pp['L_XYZ'][i][1])
+            find_iy = abs(np.array(L_y)-dict_pp['L_XYZ'][i][1])
             i_x = list(find_ix).index(min(find_ix))
             i_y = list(find_iy).index(min(find_iy))
             # rebuild
@@ -379,4 +410,430 @@ def Compute_SpecificSurf(dict_pp, dict_sample, dict_user):
     ax2.set_ylabel(r'Equivalent to Specific Surface (m-1)')
 
     fig.savefig('png/tracker_specific_surf.png')
+    plt.close(fig)
+
+#-------------------------------------------------------------------------------
+
+def Compute_DegreeHydration(dict_pp, dict_sample, dict_user):
+    '''
+    Compute the degree of hydration of the problem.
+    '''
+    print('\nCompute the degree of hydratation\n')
+
+    L_xi = []
+    M_psi_0 = None
+
+    # iterate on the time
+    for iteration in range(len(dict_pp['L_L_psi'])):
+        S_psi = np.sum(dict_pp['L_L_psi'][iteration])
+        if M_psi_0 == None:
+            M_psi_0 = S_psi/len(dict_pp['L_L_psi'][iteration])
+        # Compute mean
+        L_xi.append(1-(S_psi/len(dict_pp['L_L_psi'][iteration]))/M_psi_0)
+
+    # plot results
+    fig, (ax1) = plt.subplots(1,1,figsize=(16,9))
+    ax1.plot(L_xi)
+    ax1.set_ylabel(r'$\xi$ (-)')
+    ax1.set_xlabel('Iterations (-)')
+    fig.savefig('png/tracker_degree_hydration.png')
+    plt.close(fig)
+
+#-------------------------------------------------------------------------------
+
+def Compute_ChordLenght_Density_Func(dict_pp, dict_sample, dict_user):
+    '''
+    Compute the chord-length density function.
+
+    Probability for a line of a given lenght to not intersect interface.
+    '''
+    print('\nCompute the chord-length density functions for pore and solid\n')
+
+    # create folders
+    Create_Folder('png/cldf')
+    Create_Folder('png/cldf_n')
+
+    L_xi = []
+    M_psi_0 = None
+    L_L_cldf_pore = []
+    L_L_cldf_solid = []
+    L_L_cldf_pore_n = []
+    L_L_cldf_solid_n = []
+    n_cldf_comp = 5
+    L_xi_comp = []
+    # consider the criteria on the maximum number of iterations for pp
+    if len(dict_pp['L_L_psi'])-1 > n_cldf_comp:
+        f_pp = (len(dict_pp['L_L_psi'])-1)/n_cldf_comp
+    else :
+        f_pp = 1
+    # post proccess index
+    i_pp = 0
+
+    # iterate on the time
+    for iteration in range(len(dict_pp['L_L_psi'])):
+        print(iteration+1,'/',len(dict_pp['L_L_psi']))
+
+        # Read mesh
+        L_x = dict_sample['L_x']
+        L_y = dict_sample['L_y']
+
+        # Rebuild phi array binary (threshold at 0.5)
+        M_phi = np.array(np.zeros((dict_user['n_mesh']+1,dict_user['n_mesh']+1)))
+        # Rebuild psi array binary (threshold at 0.5)
+        M_psi = np.array(np.zeros((dict_user['n_mesh']+1,dict_user['n_mesh']+1)))
+        # iterate on the domain
+        for i in range(len(dict_pp['L_L_phi'][iteration])):
+            # interpolate meshes
+            find_ix = abs(np.array(L_x)-dict_pp['L_XYZ'][i][0])
+            find_iy = abs(np.array(L_y)-dict_pp['L_XYZ'][i][1])
+            i_x = list(find_ix).index(min(find_ix))
+            i_y = list(find_iy).index(min(find_iy))
+            # rebuild phi
+            if dict_pp['L_L_phi'][iteration][i] > 0.5 :
+                M_phi[-1-i_y,i_x] = 1
+            else :
+                M_phi[-1-i_y,i_x] = 0
+            # rebuild psi
+            if dict_pp['L_L_psi'][iteration][i] > 0.5 :
+                M_psi[-1-i_y,i_x] = 1
+            else :
+                M_psi[-1-i_y,i_x] = 0
+
+        # xi
+        S_psi = np.sum(dict_pp['L_L_psi'][iteration])
+        if M_psi_0 == None:
+            M_psi_0 = S_psi/len(dict_pp['L_L_psi'][iteration])
+        # Compute mean
+        L_xi.append(1-(S_psi/len(dict_pp['L_L_psi'][iteration]))/M_psi_0)
+
+        # definition of the probability density function
+        l_min = dict_user['d_mesh']*5
+        l_max = dict_user['d_mesh']*100
+        n_l_log = 20
+        n_try = 1000
+        n_nodes_line = 10
+
+        # generate the list of chord length (in base 10)
+        l_min_log = math.log(l_min,10)
+        l_max_log = math.log(l_max,10)
+        L_l_log = np.linspace(l_min_log, l_max_log, n_l_log)
+        L_l = []
+
+        # compute the chord-Lenght density function
+        L_cldf_pore = []
+        L_cldf_solid = []
+
+        # iterate on the list of chord length
+        for i_l_log in range(len(L_l_log)):
+            l_log = L_l_log[i_l_log]
+            # compute the length of the chord
+            l = 10**l_log
+            L_l.append(l)
+            # initialyze the counter
+            n_in_pore = 0
+            n_in_solid = 0
+            # iterate on the number of tries
+            for i_try in range(n_try):
+                # generate random position (origin)
+                x_origin = (random.random()-1/2)*(dict_user['dim_domain']-2*l)
+                y_origin = (random.random()-1/2)*(dict_user['dim_domain']-2*l)
+                # generate random orientation
+                angle = random.random()*2*math.pi
+                # compute the final point
+                x_end = x_origin + l*math.cos(angle)
+                y_end = y_origin + l*math.sin(angle)
+                # check pore
+                in_pore = True
+                # discretization of the line to verify intersection
+                for i_node_line in range(n_nodes_line):
+                    x_node = x_origin + i_node_line/(n_nodes_line-1)*(x_end-x_origin)
+                    y_node = y_origin + i_node_line/(n_nodes_line-1)*(y_end-y_origin)
+                    # look for the nearest node in the mesh
+                    find_ix = abs(np.array(dict_sample['L_x'])-x_node)
+                    find_iy = abs(np.array(dict_sample['L_y'])-y_node)
+                    i_x = list(find_ix).index(min(find_ix))
+                    i_y = list(find_iy).index(min(find_iy))
+                    # check conditions
+                    if M_phi[-1-i_y, i_x] == 1 or M_psi[-1-i_y, i_x] == 1:
+                        in_pore = False
+                if in_pore :
+                    n_in_pore = n_in_pore + 1
+                # check solid
+                in_solid = True
+                # discretization of the line to verify intersection
+                for i_node_line in range(n_nodes_line):
+                    x_node = x_origin + i_node_line/(n_nodes_line-1)*(x_end-x_origin)
+                    y_node = y_origin + i_node_line/(n_nodes_line-1)*(y_end-y_origin)
+                    # look for the nearest node in the mesh
+                    find_ix = abs(np.array(dict_sample['L_x'])-x_node)
+                    find_iy = abs(np.array(dict_sample['L_y'])-y_node)
+                    i_x = list(find_ix).index(min(find_ix))
+                    i_y = list(find_iy).index(min(find_iy))
+                    # check conditions
+                    if M_phi[-1-i_y, i_x] == 0 or M_psi[-1-i_y, i_x] == 0:
+                        in_solid = False
+                if in_solid :
+                    n_in_solid = n_in_solid + 1
+            # compute the probability
+            L_cldf_pore.append(n_in_pore/n_try)
+            L_cldf_solid.append(n_in_solid/n_try)
+
+        # normalyze the cldf
+        L_cldf_pore_n = []
+        L_cldf_solid_n = []
+        Int_pore = 0
+        Int_solid = 0
+        # compute the integral
+        for i in range(len(L_cldf_pore)-1):
+            Int_pore = Int_pore + (L_cldf_pore[i]+L_cldf_pore[i+1])/2*(L_l[i+1]-L_l[i])
+            Int_solid = Int_solid + (L_cldf_solid[i]+L_cldf_solid[i+1])/2*(L_l[i+1]-L_l[i])
+        # normalyze to obtain Int = 1
+        for i in range(len(L_cldf_pore)):
+            if Int_pore!=0:
+                L_cldf_pore_n.append(L_cldf_pore[i]/Int_pore)
+            else :
+                L_cldf_pore_n.append(0)
+            if Int_solid!=0:
+                L_cldf_solid_n.append(L_cldf_solid[i]/Int_solid)
+            else :
+                L_cldf_solid_n.append(0)
+
+        # save for comparison
+        if iteration >= f_pp*i_pp:
+            L_L_cldf_pore.append(L_cldf_pore)
+            L_L_cldf_solid.append(L_cldf_solid)
+            L_L_cldf_pore_n.append(L_cldf_pore_n)
+            L_L_cldf_solid_n.append(L_cldf_solid_n)
+            L_xi_comp.append(L_xi[-1])
+            i_pp = i_pp+1
+
+        # plot results
+        fig, (ax1, ax2) = plt.subplots(1,2,figsize=(16,9))
+
+        ax1.plot(L_l, L_cldf_pore)
+        ax1.set_xscale('log')
+        ax1.set_ylabel('Chord-length density function (-)')
+        ax1.set_xlabel('Length (-)')
+        ax1.set_title('Pore')
+
+        ax2.plot(L_l, L_cldf_solid)
+        ax2.set_xscale('log')
+        ax2.set_ylabel('Chord-length density function (-)')
+        ax2.set_xlabel('Length (-)')
+        ax2.set_title('Solid')
+
+        plt.suptitle(L_xi[-1])
+        fig.savefig('png/cldf/'+str(iteration)+'.png')
+        plt.close(fig)
+
+        # plot results
+        fig, (ax1, ax2) = plt.subplots(1,2,figsize=(16,9))
+
+        ax1.plot(L_l, L_cldf_pore_n)
+        ax1.set_xscale('log')
+        ax1.set_ylabel('Normalized chord-length density function (-)')
+        ax1.set_xlabel('Length (-)')
+        ax1.set_title('Pore')
+
+        ax2.plot(L_l, L_cldf_solid_n)
+        ax2.set_xscale('log')
+        ax2.set_ylabel('Normalized chord-length density function (-)')
+        ax2.set_xlabel('Length (-)')
+        ax2.set_title('Solid')
+
+        plt.suptitle(L_xi[-1])
+        fig.savefig('png/cldf_n/'+str(iteration)+'.png')
+        plt.close(fig)
+
+    # plot results
+    fig, (ax1, ax2) = plt.subplots(1,2,figsize=(16,9))
+
+    for i in range(len(L_L_cldf_pore)):
+        ax1.plot(L_l, L_L_cldf_pore[i], label=L_xi_comp[i])
+    ax1.legend()
+    ax1.set_xscale('log')
+    ax1.set_ylabel('Chord-length density function (-)')
+    ax1.set_xlabel('Length (-)')
+    ax1.set_title('Pore')
+
+    for i in range(len(L_L_cldf_solid)):
+        ax2.plot(L_l, L_L_cldf_solid[i], label=L_xi_comp[i])
+    ax2.legend()
+    ax2.set_xscale('log')
+    ax2.set_ylabel('Chord-length density function (-)')
+    ax2.set_xlabel('Length (-)')
+    ax2.set_title('Solid')
+
+    fig.savefig('png/cldf/Comparison.png')
+    plt.close(fig)
+
+    fig, (ax1, ax2) = plt.subplots(1,2,figsize=(16,9))
+
+    for i in range(len(L_L_cldf_pore_n)):
+        ax1.plot(L_l, L_L_cldf_pore_n[i], label=L_xi_comp[i])
+    ax1.legend()
+    ax1.set_xscale('log')
+    ax1.set_ylabel('Normalized chord-length density function (-)')
+    ax1.set_xlabel('Length (-)')
+    ax1.set_title('Pore')
+
+    for i in range(len(L_L_cldf_solid_n)):
+        ax2.plot(L_l, L_L_cldf_solid_n[i], label=L_xi_comp[i])
+    ax2.legend()
+    ax2.set_xscale('log')
+    ax2.set_ylabel('Normalized chord-length density function (-)')
+    ax2.set_xlabel('Length (-)')
+    ax2.set_title('Solid')
+
+    fig.savefig('png/cldf_n/Comparison.png')
+    plt.close(fig)
+
+#-------------------------------------------------------------------------------
+
+def Compute_PoreSize_Func(dict_pp, dict_sample, dict_user):
+    '''
+    Compute the pore-size function.
+
+    Probability for a random point to be at a distance R from the nearest point on the pore-solid interface.
+    '''
+    print('\nCompute the pore-size function\n')
+
+    # create folders
+    Create_Folder('png/psf')
+
+    L_mean_pore = []
+    L_L_psf = []
+    L_L_psf_n = []
+    L_L_pore_size = []
+    n_cldf_comp = 5
+    L_xi_comp = []
+    M_psi_0 = None
+    L_xi = []
+    # consider the criteria on the maximum number of iterations for pp
+    if len(dict_pp['L_L_psi'])-1 > n_cldf_comp:
+        f_pp = (len(dict_pp['L_L_psi'])-1)/n_cldf_comp
+    else :
+        f_pp = 1
+    # post proccess index
+    i_pp = 0
+
+    # iterate on time
+    for iteration in range(len(dict_pp['L_L_phi'])):
+        print(iteration+1,'/',len(dict_pp['L_L_phi']))
+
+        # Read mesh
+        L_x = dict_sample['L_x']
+        L_y = dict_sample['L_y']
+
+        # Rebuild phi array binary (threshold at 0.5)
+        M_phi = np.array(np.zeros((dict_user['n_mesh']+1,dict_user['n_mesh']+1)))
+        # iterate on the domain
+        for i in range(len(dict_pp['L_L_phi'][iteration])):
+            # interpolate meshes
+            find_ix = abs(np.array(L_x)-dict_pp['L_XYZ'][i][0])
+            find_iy = abs(np.array(L_y)-dict_pp['L_XYZ'][i][1])
+            i_x = list(find_ix).index(min(find_ix))
+            i_y = list(find_iy).index(min(find_iy))
+            # rebuild phi
+            if dict_pp['L_L_phi'][iteration][i] > 0.5 :
+                M_phi[-1-i_y,i_x] =  0.5
+            else :
+                M_phi[-1-i_y,i_x] = -0.5
+
+        # xi
+        S_psi = np.sum(dict_pp['L_L_psi'][iteration])
+        if M_psi_0 == None:
+            M_psi_0 = S_psi/len(dict_pp['L_L_psi'][iteration])
+        # Compute mean
+        L_xi.append(1-(S_psi/len(dict_pp['L_L_psi'][iteration]))/M_psi_0)
+
+        # compute the signed distance function
+        sd = skfmm.distance(M_phi, dx = L_x[1]-L_x[0])
+
+        # work on the signed distance
+        mean_size_pore = 0
+        n_mean_size_pore = 0
+        n_size = 20
+        L_pore_size = np.linspace(np.min(sd),0,n_size)
+        L_psf = [0]*(n_size-1)
+        # iterate on the mesh
+        for i_x in range(len(L_x)):
+            for i_y in range(len(L_y)):
+                # check if the point is outside of the gel
+                if sd[-1-i_y,i_x] < 0:
+                    # distribution of the pore size
+                    i = 0
+                    while i < n_size-2 and sd[-1-i_y,i_x] > L_pore_size[i+1]:
+                        i = i + 1
+                    L_psf[i] = L_psf[i] + 1
+                    # compute the mean size
+                    mean_size_pore = mean_size_pore + sd[-1-i_y,i_x]
+                    n_mean_size_pore = n_mean_size_pore + 1
+        # update with mean
+        mean_size_pore = mean_size_pore/n_mean_size_pore
+        for i in range(len(L_psf)):
+            L_psf[i] = L_psf[i]/n_mean_size_pore
+        L_mean_pore.append(mean_size_pore)
+        # compute the integral
+        Int = 0
+        for i in range(len(L_psf)-1):
+            Int = Int + (L_psf[i]+L_psf[i+1])/2*(L_pore_size[i+1]-L_pore_size[i])
+        # normalization
+        L_psf_n = []
+        for i in range(len(L_psf)):
+            L_psf_n.append(L_psf[i]/Int)
+
+        # save for comparison
+        if iteration >= f_pp*i_pp:
+            L_L_psf.append(L_psf)
+            L_L_psf_n.append(L_psf_n)
+            L_L_pore_size.append(L_pore_size)
+            L_xi_comp.append(L_xi[-1])
+            i_pp = i_pp+1
+
+        # plot results
+        fig, (ax1, ax2) = plt.subplots(1,2,figsize=(16,9))
+
+        ax1.plot(L_pore_size[1:], L_psf)
+        ax1.set_ylabel('Pore-size function (-)')
+        ax1.set_xlabel('Pore size (-)')
+        ax1.set_title('Not normalized')
+
+        ax2.plot(L_pore_size[1:], L_psf_n)
+        ax2.set_ylabel('Normalized pore-size function (-)')
+        ax2.set_xlabel('Pore size (-)')
+        ax2.set_title('Normalized')
+
+        plt.suptitle(L_xi[-1])
+        fig.savefig('png/psf/'+str(iteration)+'.png')
+        plt.close(fig)
+
+    # plot results
+    fig, (ax1, ax2) = plt.subplots(1,2,figsize=(16,9))
+
+    for i in range(len(L_L_psf)):
+        ax1.plot(L_L_pore_size[i], L_L_psf[i], label=L_xi_comp[i])
+    ax1.legend()
+    ax1.set_ylabel('Pore-size function (-)')
+    ax1.set_xlabel('Pore size (-)')
+    ax1.set_title('Not normalized')
+
+    for i in range(len(L_L_cldf_solid)):
+        ax2.plot(L_L_pore_size[i], L_L_psf_n[i], label=L_xi_comp[i])
+    ax2.legend()
+    ax2.set_ylabel('Pore-size function (-)')
+    ax2.set_xlabel('Pore size (-)')
+    ax2.set_title('Normalized')
+
+    fig.savefig('png/psf/Comparison.png')
+    plt.close(fig)
+
+
+    fig, (ax1) = plt.subplots(1,1,figsize=(16,9))
+
+    ax1.plot(L_xi, L_mean_pore)
+    ax1.set_ylabel('Mean pore size (-)')
+    ax1.set_xlabel(r'$\xi$ (-)')
+
+    fig.savefig('png/psf/MeanPoreSize.png')
     plt.close(fig)

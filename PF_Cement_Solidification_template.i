@@ -29,7 +29,7 @@
     outputs = exodus
     [./InitialCondition]
       type = FunctionIC
-      function = psi_txt
+      function = psi_png #use  psi_txt if you want to write a .txt data file
     [../]
   [../]
   [./c]
@@ -64,6 +64,12 @@
     mob_name = L_phi
     kappa_name = kappa_phi
   [../]
+  [./phi_noise]
+    type = ConservedLangevinNoise
+    amplitude = 100
+    variable = phi
+    noise = uniform_noise
+  []
 
   #
   # Order parameter psi
@@ -151,11 +157,14 @@
     type = ParsedMaterial
     property_name = kappa_c
     coupled_variables = 'psi phi'
-    expression = '0.7*(1-psi^3*(6*psi^2-15*psi+10))*exp(-0*phi)'
+    expression = '0.7*(1-psi^3*(6*psi^2-15*psi+10))*exp(-5*phi)'
   [../]
 []
 
 [Functions]
+  active = 'phi_txt psi_png c_txt'
+  # depending on the IC_mode, select psi_png or psi_txt, not both.
+
   [phi_txt]
     type = PiecewiseMultilinear
     data_file = txt/phi.txt
@@ -164,10 +173,22 @@
     type = PiecewiseMultilinear
     data_file = txt/psi.txt
   []
+  [psi_png]
+    type = ImageFunction
+    file = Petersen2018_IC.png
+    scale = 0.00392156862745098
+    component = 0
+  []
   [c_txt]
     type = PiecewiseMultilinear
     data_file = txt/c.txt
   []
+[]
+
+[UserObjects]
+  [./uniform_noise]
+    type = ConservedUniformNoise
+  [../]
 []
 
 [Preconditioning]
@@ -197,12 +218,12 @@
   nl_abs_tol = 1.0e-5
 
   start_time = 0.0
-  end_time   = 20
-  num_steps = 10
+  end_time   = 2
+  num_steps = 999
 
   [./TimeStepper]
     type = SolutionTimeAdaptiveDT
-    dt = 0.005
+    dt = 0.0003
   [../]
 []
 

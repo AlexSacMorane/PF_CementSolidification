@@ -155,3 +155,75 @@ def Insert_Grains(dict_sample, dict_user):
     file_to_write_psi.close()
     file_to_write_phi.close()
     file_to_write_c.close()
+
+#-------------------------------------------------------------------------------
+
+def Create_Petersen(dict_sample, dict_user):
+    '''
+    Create an initial configuration adpated from the one used by (Petersen, 2018).
+
+    Map of phi and c are generated. Map of psi will be created by reading a .png file.
+    '''
+    # Initialize the arrays
+    M_phi = np.zeros((dict_user['n_mesh'],dict_user['n_mesh']))
+    M_c = 0.95*np.ones((dict_user['n_mesh'],dict_user['n_mesh']))
+
+    # Initialize the mesh lists
+    L_x = np.linspace(-dict_user['dim_domain']/2, dict_user['dim_domain']/2, dict_user['n_mesh'])
+    L_y = np.linspace(-dict_user['dim_domain']/2, dict_user['dim_domain']/2, dict_user['n_mesh'])
+
+    # Plot maps
+    fig, ((ax1),(ax2)) = plt.subplots(2,1,figsize=(9,25))
+
+    # parameters
+    title_fontsize = 30
+
+    # phi
+    im = ax1.imshow(M_phi, interpolation = 'nearest', extent=(L_x[0],L_x[-1],L_y[0],L_y[-1]))
+    fig.colorbar(im, ax=ax1)
+    ax1.set_title(r'Map of $\phi$',fontsize = title_fontsize)
+    # c
+    im = ax2.imshow(M_c, interpolation = 'nearest', extent=(L_x[0],L_x[-1],L_y[0],L_y[-1]))
+    fig.colorbar(im, ax=ax2)
+    ax2.set_title(r'Map of c',fontsize = title_fontsize)
+
+    fig.savefig('png/IC.png')
+    plt.close(fig)
+
+    # save in dicts
+    dict_sample['L_x'] = L_x
+    dict_sample['L_y'] = L_y
+    dict_sample['M_phi'] = M_phi
+    dict_sample['M_c'] = M_c
+
+    # Write data
+    file_to_write_phi = open('txt/phi.txt','w')
+    file_to_write_c = open('txt/c.txt','w')
+    # x
+    file_to_write_phi.write('AXIS X\n')
+    file_to_write_c.write('AXIS X\n')
+    line = ''
+    for x in dict_sample['L_x']:
+        line = line + str(x)+ ' '
+    line = line + '\n'
+    file_to_write_phi.write(line)
+    file_to_write_c.write(line)
+    # y
+    file_to_write_phi.write('AXIS Y\n')
+    file_to_write_c.write('AXIS Y\n')
+    line = ''
+    for y in dict_sample['L_y']:
+        line = line + str(y)+ ' '
+    line = line + '\n'
+    file_to_write_phi.write(line)
+    file_to_write_c.write(line)
+    # data
+    file_to_write_phi.write('DATA\n')
+    file_to_write_c.write('DATA\n')
+    for l in range(len(dict_sample['L_y'])):
+        for c in range(len(dict_sample['L_x'])):
+            file_to_write_phi.write(str(M_phi[-1-l][c])+'\n')
+            file_to_write_c.write(str(M_c[-1-l][c])+'\n')
+    # close
+    file_to_write_phi.close()
+    file_to_write_c.close()
