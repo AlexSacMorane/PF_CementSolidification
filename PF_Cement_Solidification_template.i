@@ -29,7 +29,7 @@
     outputs = exodus
     [./InitialCondition]
       type = FunctionIC
-      function = psi_png #use  psi_txt if you want to write a .txt data file
+      function =
     [../]
   [../]
   [./c]
@@ -64,12 +64,6 @@
     mob_name = L_phi
     kappa_name = kappa_phi
   [../]
-  [./phi_noise]
-    type = ConservedLangevinNoise
-    amplitude = 100
-    variable = phi
-    noise = uniform_noise
-  []
 
   #
   # Order parameter psi
@@ -103,13 +97,13 @@
     type = CoefCoupledTimeDerivative
     v = 'phi'
     variable = c
-    coef = 1
+    coef =
   [../]
   [./psi_c]
     type = CoefCoupledTimeDerivative
     v = 'psi'
     variable = c
-    coef = 2.35
+    coef =
   [../]
   [./c_diffusion]
     type = ACInterface
@@ -134,9 +128,9 @@
     block = 0
     property_name = g_phi
     coupled_variables = 'phi c'
-    constant_names = 'W x_c'
+    constant_names = 'W x_c A B C D'
     constant_expressions =
-    expression = 'W*16*(phi^2)*((1-phi)^2) + x_c*(c-0.95)*(1.50*phi^3-2.03*phi^2-0.45*phi+0.98)'
+    expression = 'W*16*(phi^2)*((1-phi)^2) + x_c*(c-0.95)*(A*phi^3-B*phi^2-C*phi+D)'
     enable_jit = true
     derivative_order = 1
   [../]
@@ -157,13 +151,14 @@
     type = ParsedMaterial
     property_name = kappa_c
     coupled_variables = 'psi phi'
-    expression = '0.7*(1-psi^3*(6*psi^2-15*psi+10))*exp(-5*phi)'
+    constant_names = 'k_c_0 k_c_exp'
+    constant_expressions =
+    expression = 'k_c_0*(1-psi^3*(6*psi^2-15*psi+10))*exp(-k_c_exp*phi)'
   [../]
 []
 
 [Functions]
-  active = 'phi_txt psi_png c_txt'
-  # depending on the IC_mode, select psi_png or psi_txt, not both.
+  active =
 
   [phi_txt]
     type = PiecewiseMultilinear
@@ -183,12 +178,6 @@
     type = PiecewiseMultilinear
     data_file = txt/c.txt
   []
-[]
-
-[UserObjects]
-  [./uniform_noise]
-    type = ConservedUniformNoise
-  [../]
 []
 
 [Preconditioning]
@@ -218,7 +207,6 @@
   nl_abs_tol = 1.0e-5
 
   start_time = 0.0
-  end_time   = 2
   num_steps = 999
 
   [./TimeStepper]

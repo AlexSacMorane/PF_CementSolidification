@@ -44,8 +44,19 @@ Energy_barrier = 1 # the energy barrier value used for free energies description
 kappa = 59.5*Energy_barrier*d_mesh*d_mesh # gradient coefficient for free energies phi/psi
 Mobility = 0.2 # kinetic of free energies evolution (phi/psi)
 L = 0.12*Mobility/d_mesh # Mobility value used for free energies (phi/psi)
-chi_c_phi = 200*Energy_barrier # coefficient used to tilt the free energies phi (dependent on the c value)
+a_phi = 1 # conversion term (phi -> c)
+a_psi = 2.35 # conversion term (psi -> c)
+chi_c_phi = 100*Energy_barrier # coefficient used to tilt the free energies phi (dependent on the c value)
 chi_c_psi = 10*Energy_barrier # coefficient used to tilt the free energies psi (dependent on the c value)
+tilt_phi_phi0 = -0.1 # the phase value of the minima for the phi tilt function
+A_tilt_phi = 2/(-tilt_phi_phi0+1)**3  # phi^3 coefficient
+B_tilt_phi = -3/2*A_tilt_phi*(tilt_phi_phi0+1) # phi^2 coefficient
+C_tilt_phi = 3*A_tilt_phi*tilt_phi_phi0 # phi coefficient
+D_tilt_phi = A_tilt_phi/2*(1-3*tilt_phi_phi0) # constant
+
+# description of the solute diffusion
+k_c_0 = 0.7 # coefficient of solute diffusion
+k_c_exp = 3 # decay of the solute diffusion because of the gel (in the exp term)
 
 # computing information
 n_proc = 6 # number of processor used
@@ -62,8 +73,16 @@ dict_user = {
 'Energy_barrier': Energy_barrier,
 'kappa': kappa,
 'L': L,
+'a_phi': a_phi,
+'a_psi': a_psi,
 'chi_c_phi': chi_c_phi,
 'chi_c_psi': chi_c_psi,
+'A_tilt_phi': A_tilt_phi,
+'B_tilt_phi': B_tilt_phi,
+'C_tilt_phi': C_tilt_phi,
+'D_tilt_phi': D_tilt_phi,
+'k_c_0': k_c_0,
+'k_c_exp': k_c_exp,
 'n_proc': n_proc,
 'tic': tic
 }
@@ -142,13 +161,13 @@ Sort_vtk(dict_pp, dict_user)
 print('\nPost processing')
 Read_data(dict_pp, dict_sample, dict_user)
 
-Compute_Sphi_Spsi_Sc(dict_pp, dict_sample, dict_user)
+Compute_DegreeHydration(dict_pp, dict_sample, dict_user)
 Compute_Mphi_Mpsi_Mc(dict_pp, dict_sample, dict_user)
+Compute_Sphi_Spsi_Sc(dict_pp, dict_sample, dict_user)
 Compute_macro_micro_porosity(dict_pp, dict_sample, dict_user)
 Compute_SpecificSurf(dict_pp, dict_sample, dict_user)
-Compute_DegreeHydration(dict_pp, dict_sample, dict_user)
-Compute_ChordLenght_Density_Func(dict_pp, dict_sample, dict_user)
-Compute_PoreSize_Func(dict_pp, dict_sample, dict_user)
+#Compute_ChordLenght_Density_Func(dict_pp, dict_sample, dict_user)
+#Compute_PoreSize_Func(dict_pp, dict_sample, dict_user)
 
 #-------------------------------------------------------------------------------
 # Close

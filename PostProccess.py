@@ -289,6 +289,9 @@ def Compute_Mphi_Mpsi_Mc(dict_pp, dict_sample, dict_user):
     fig.savefig('png/tracker_Ms_psi_phi_c_mass.png')
     plt.close(fig)
 
+    print('Final psi', L_M_psi[-1])
+    print('Final phi', L_M_phi[-1])
+
 #-------------------------------------------------------------------------------
 
 def Compute_macro_micro_porosity(dict_pp, dict_sample, dict_user):
@@ -353,6 +356,9 @@ def Compute_macro_micro_porosity(dict_pp, dict_sample, dict_user):
     fig.savefig('png/tracker_p_macro_micro.png')
     plt.close(fig)
 
+    print('Final macro', L_p_macro[-1])
+    print('Final micro', L_p_micro[-1])
+
 #-------------------------------------------------------------------------------
 
 def Compute_SpecificSurf(dict_pp, dict_sample, dict_user):
@@ -412,6 +418,8 @@ def Compute_SpecificSurf(dict_pp, dict_sample, dict_user):
     fig.savefig('png/tracker_specific_surf.png')
     plt.close(fig)
 
+    print('Final', L_spec_surf[-1])
+
 #-------------------------------------------------------------------------------
 
 def Compute_DegreeHydration(dict_pp, dict_sample, dict_user):
@@ -438,6 +446,8 @@ def Compute_DegreeHydration(dict_pp, dict_sample, dict_user):
     ax1.set_xlabel('Iterations (-)')
     fig.savefig('png/tracker_degree_hydration.png')
     plt.close(fig)
+
+    print('Final', L_xi[-1])
 
 #-------------------------------------------------------------------------------
 

@@ -30,12 +30,30 @@ def Adapt_I(dict_sample, dict_user):
             line = line[:-1] + ' ' + str(min(dict_sample['L_y'])) + '\n'
         if j == 10:
             line = line[:-1] + ' ' + str(max(dict_sample['L_y'])) + '\n'
-        if j == 129:
+        if j == 32:
+            if dict_user['IC_mode'] == 'Spheres':
+                line = line[:-1] + 'psi_txt\n'
+            if dict_user['IC_mode'] == 'Petersen':
+                line = line[:-1] + 'psi_png\n'
+        if j == 100:
+            line = line[:-1] + ' ' + str(dict_user['a_phi']) + '\n'
+        if j == 106:
+            line = line[:-1] + ' ' + str(dict_user['a_psi']) + '\n'
+        if j == 123:
             line = line[:-1] + " '" + str(dict_user['L']) + ' ' + str(dict_user['kappa']) + ' '\
                                     + str(dict_user['L']) + ' ' + str(dict_user['kappa']) + " 1'\n"
-        if j == 138:
-            line = line[:-1] + " '" + str(dict_user['Energy_barrier']) + ' ' + str(dict_user['chi_c_phi']) + "'\n"
-        if j == 150:
+        if j == 132:
+            line = line[:-1] + " '" + str(dict_user['Energy_barrier']) + ' ' + str(dict_user['chi_c_phi'])\
+                             + ' ' + str(dict_user['A_tilt_phi']) + ' ' + str(dict_user['B_tilt_phi'])\
+                             + ' ' + str(dict_user['C_tilt_phi']) + ' ' + str(dict_user['D_tilt_phi']) + "'\n"
+        if j == 144:
             line = line[:-1] + " '" + str(dict_user['Energy_barrier']) + ' ' + str(dict_user['chi_c_psi']) + "'\n"
+        if j == 155:
+            line = line[:-1] + " '" + str(dict_user['k_c_0']) + ' ' + str(dict_user['k_c_exp']) + "'\n"
+        if j == 161:
+            if dict_user['IC_mode'] == 'Spheres':
+                line = line[:-1] + "'phi_txt psi_txt c_txt'\n"
+            if dict_user['IC_mode'] == 'Petersen':
+                line = line[:-1] + "'phi_txt psi_png c_txt'\n"
         file_to_write.write(line)
     file_to_write.close()
