@@ -211,7 +211,7 @@
 
   [./TimeStepper]
     type = SolutionTimeAdaptiveDT
-    dt = 0.0003
+    dt = 0.1
   [../]
 []
 

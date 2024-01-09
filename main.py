@@ -18,24 +18,27 @@ from WriteI import *
 # User
 #------------------------------------------------------------------------------
 
+# Description of the domain (total)
+dim_domain = 500 # size of the study domain (µm)
+
 # Definition of the IC
 # Available : Petersen, Spheres
-IC_mode = 'Petersen'
+IC_mode = 'Spheres'
 
 if IC_mode=='Spheres' :
     # Description of the grain (size distribution)
-    R = 1 # size of the grain of cement
-    R_var = 0.2 # variance of the size of the grao, pf cement
-    n_grains = 1 # number of grain to insert
-    n_try = 50 # maximum number of insertion try
+    R = 17 # size of the grain of cement (µm)
+    R_var = 0.97 # variance of the size of the grao, pf cement
+    w_g_target = 0.5 # mass ratio water/cement targetted
+    rho_H20 = 1000 # density water (kg.m-3)
+    rho_g = 3000 # density cement (kg.m-3)
+    n_try = 100 # maximum number of insertion try
+    n_try_g = 200 # maximum number of try (grains)
     # Description of the domain (insertion)
-    dim_ins = 0.01 # size of the grain insertion domain
-
-# Description of the domain (total)
-dim_domain = 0.5 # size of the study domain
+    dim_ins = dim_domain # size of the grain insertion domain
 
 # Description of the mesh
-n_mesh = 300 # number of element in one direction of the mesh
+n_mesh = 400 # number of element in one direction of the mesh
              # the number of nodes is n_mesh+1
 d_mesh = dim_domain/n_mesh # size of the mesh element
 
@@ -56,7 +59,7 @@ D_tilt_phi = A_tilt_phi/2*(1-3*tilt_phi_phi0) # constant
 
 # description of the solute diffusion
 k_c_0 = 0.7 # coefficient of solute diffusion
-k_c_exp = 3 # decay of the solute diffusion because of the gel (in the exp term)
+k_c_exp = 5 # decay of the solute diffusion because of the gel (in the exp term)
 
 # computing information
 n_proc = 6 # number of processor used
@@ -90,9 +93,12 @@ dict_user = {
 if IC_mode=='Spheres' :
     dict_user['R'] = R
     dict_user['R_var'] = R_var
-    dict_user['n_grains'] = n_grains
     dict_user['n_try'] = n_try
     dict_user['dim_ins'] = dim_ins
+    dict_user['rho_g'] = rho_g
+    dict_user['rho_water'] = rho_H20
+    dict_user['w_g_target'] = w_g_target
+    dict_user['n_try_g'] = n_try_g
 
 #-------------------------------------------------------------------------------
 # Prepare simulation
