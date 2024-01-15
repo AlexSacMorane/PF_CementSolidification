@@ -12,6 +12,30 @@ import skfmm
 # Functions
 #-------------------------------------------------------------------------------
 
+def check_overlap(L_radius_grains, L_pos_grains, i_step, n_steps, factor_int):
+    '''
+    Determine if grains are overlapping.
+
+    Used in Insert_Grains() function.
+    '''
+    L_overlap = []
+    overlap = False
+    for i_g in range(len(L_radius_grains)-1):
+        for j_g in range(i_g+1, len(L_radius_grains)):
+            # radius are partially considered
+            radius_i = L_radius_grains[i_g]*i_step/n_steps
+            radius_j = L_radius_grains[j_g]*i_step/n_steps
+            # position of grains
+            pos_i = L_pos_grains[i_g]
+            pos_j = L_pos_grains[j_g]
+            # check distance
+            if np.linalg.norm(pos_i-pos_j)<radius_i+radius_j+factor_int:
+                overlap = True
+                L_overlap.append((i_g, j_g))
+    return overlap, L_overlap
+
+#-------------------------------------------------------------------------------
+
 def Insert_Grains(dict_sample, dict_user):
     '''
     Insert n_grains grains in the domain. The grains are circle defined by a radius (uniform distribution).
@@ -30,52 +54,80 @@ def Insert_Grains(dict_sample, dict_user):
     L_y = np.linspace(-dict_user['dim_domain']/2, dict_user['dim_domain']/2, dict_user['n_mesh'])
 
     # Insert grains
-    L_center_x_grains = []
-    L_center_y_grains = []
+    L_pos_grains = []
     L_radius_grains = []
     Surface_grain = 0
     m_H20_m_cement = 2*dict_user['w_g_target']
-    i_try_g = 0
-    while m_H20_m_cement > dict_user['w_g_target'] and i_try_g < dict_user['n_try_g']:
-        i_try_g = i_try_g + 1
+    # check conditions
+    while m_H20_m_cement > dict_user['w_g_target'] :
         # Random radius of the grain
         R_try = dict_user['R']*(1+dict_user['R_var']*(random.random()-0.5)*2)
-        # Try to insert a grain (circle)
-        i_try = 0
-        inserted = False
-        while not inserted and i_try < dict_user['n_try'] :
-            i_try = i_try + 1
-            # Random position of the grain center
-            x_try = (dict_user['dim_domain']/2-R_try)*(random.random()-0.5)*2
-            y_try = (dict_user['dim_domain']/2-R_try)*(random.random()-0.5)*2
-            Try = np.array([x_try, y_try])
-            # Check if there is no overlap with previous created grains
-            inserted = True
-            for i_prev_grain in range(len(L_center_x_grains)):
-                x_prev = L_center_x_grains[i_prev_grain]
-                y_prev = L_center_y_grains[i_prev_grain]
-                R_prev = L_radius_grains[i_prev_grain]
-                Prev = np.array([x_prev, y_prev])
-                if np.linalg.norm(Try-Prev)<R_try+R_prev+2*(6*dict_user['d_mesh']):
-                    inserted = False
-            # Save grain
-            if inserted :
-                L_center_x_grains.append(x_try)
-                L_center_y_grains.append(y_try)
-                L_radius_grains.append(R_try)
-                Surface_grain = Surface_grain + math.pi*R_try**2
-                m_H20_m_cement = ((dict_user['dim_domain']**2-Surface_grain)*dict_user['rho_water'])/(Surface_grain*dict_user['rho_g'])
+        # Random position of the grain center
+        x_try = (dict_user['dim_domain']/2-R_try)*(random.random()-0.5)*2
+        y_try = (dict_user['dim_domain']/2-R_try)*(random.random()-0.5)*2
+        # Save grain
+        L_pos_grains.append(np.array([x_try, y_try]))
+        L_radius_grains.append(R_try)
+        Surface_grain = Surface_grain + math.pi*R_try**2
+        m_H20_m_cement = ((dict_user['dim_domain']**2-Surface_grain)*dict_user['rho_water'])/(Surface_grain*dict_user['rho_g'])
 
-    # print psd
-    print(len(L_radius_grains),'grains inserted on',i_try_g,'tries')
+    # print result
+    print(len(L_radius_grains),'grains inserted')
     print('psd:', round(np.mean(L_radius_grains),1),'(mean)', round(np.min(L_radius_grains),1),'(min)', round(np.max(L_radius_grains),1),'(max)')
     print('psd targetted:', round(dict_user['R'],1),'(mean)', round(dict_user['R']*(1-dict_user['R_var']),1),'(min)', round(dict_user['R']*(1+dict_user['R_var']),1),'(max)')
     print('m_H20/m_cement:', round(((dict_user['dim_domain']**2-Surface_grain)*dict_user['rho_water'])/(Surface_grain*dict_user['rho_g']),2),'/',dict_user['w_g_target'],'targetted')
 
+    # Move grains (no overlap conditions)
+    # increase steply the radius
+    for i_step in range(1, dict_user['n_steps']+1):
+
+        # check overlaping
+        overlap, L_overlap = check_overlap(L_radius_grains, L_pos_grains, i_step, dict_user['n_steps'], dict_user['factor_int'])
+
+        # move grain to avoid overlap
+        i_try = 0
+        while overlap and i_try < dict_user['n_try']:
+            i_try = i_try + 1
+
+            # save old positions
+            L_pos_grains_old = L_pos_grains.copy()
+
+            # iterate o overlap list to move problematic grains
+            for overlap in L_overlap:
+                # get indices
+                i_g = overlap[0]
+                j_g = overlap[1]
+                # get radius
+                r_i = L_radius_grains[i_g]
+                r_j = L_radius_grains[j_g]
+                # get displacement vector (i->j)
+                u_ij = np.array(L_pos_grains[j_g] - L_pos_grains[i_g])
+                u_ij = u_ij/np.linalg.norm(u_ij)
+                # move grain
+                L_pos_grains[i_g] = L_pos_grains_old[j_g] - u_ij*(r_i+r_j+dict_user['factor_int'])
+                L_pos_grains[j_g] = L_pos_grains_old[i_g] + u_ij*(r_i+r_j+dict_user['factor_int'])
+
+            # Check positions of grain compared to limits
+            for i_g in range(len(L_radius_grains)):
+                # get pos and radius
+                pos = L_pos_grains[i_g]
+                rad = L_radius_grains[i_g]
+                # check limits
+                if pos[0] < - dict_user['dim_domain']/2 + rad+dict_user['factor_int']: # -x
+                    pos[0] = - dict_user['dim_domain']/2 + rad+dict_user['factor_int']
+                if pos[0] > dict_user['dim_domain']/2 - rad-dict_user['factor_int']: # +x
+                    pos[0] = dict_user['dim_domain']/2 - rad-dict_user['factor_int']
+                if pos[1] < - dict_user['dim_domain']/2 + rad+dict_user['factor_int']: # -y
+                    pos[1] = - dict_user['dim_domain']/2 + rad+dict_user['factor_int']
+                if pos[1] > dict_user['dim_domain']/2 - rad-dict_user['factor_int']: # +y
+                    pos[1] = dict_user['dim_domain']/2 - rad-dict_user['factor_int']
+            # check overlapig
+            overlap, L_overlap = check_overlap(L_radius_grains, L_pos_grains, i_step, dict_user['n_steps'], dict_user['factor_int'])
+
     # Compute phi, psi
     for i_grain in range(len(L_radius_grains)):
-        x_grain = L_center_x_grains[i_grain]
-        y_grain = L_center_y_grains[i_grain]
+        x_grain = L_pos_grains[i_grain][0]
+        y_grain = L_pos_grains[i_grain][1]
         Center_grain = np.array([x_grain, y_grain])
         r_grain = L_radius_grains[i_grain]
         # find the nearest node of the center

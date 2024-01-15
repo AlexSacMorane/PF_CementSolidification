@@ -23,7 +23,7 @@ dim_domain = 500 # size of the study domain (µm)
 
 # Definition of the IC
 # Available : Petersen, Spheres, Powder
-IC_mode = 'Powder'
+IC_mode = 'Spheres'
 
 if IC_mode=='Spheres' :
     # Description of the grain (size distribution)
@@ -32,8 +32,9 @@ if IC_mode=='Spheres' :
     w_g_target = 0.5 # mass ratio water/cement targetted
     rho_H20 = 1000 # density water (kg.m-3)
     rho_g = 3200 # density cement (kg.m-3)
-    n_try = 100 # maximum number of insertion try
-    n_try_g = 200 # maximum number of try (grains)
+    n_steps = 10 # number of step increasing grains
+    factor_int = 12 # additional distance (considering interface overlapping)
+    n_try = 100 # maximum tries to determine a compatible configuration
 
 if IC_mode=='Powder':
     # Description of the powder
@@ -56,7 +57,7 @@ L = 0.12*Mobility/d_mesh # Mobility value used for free energies (phi/psi) (s-1)
 a_phi = 1 # conversion term (phi -> c)
 a_psi = 2.35 # conversion term (psi -> c)
 chi_c_phi = 100*Energy_barrier # coefficient used to tilt the free energies phi (dependent on the c value)
-chi_c_psi = 10*Energy_barrier # coefficient used to tilt the free energies psi (dependent on the c value)
+chi_c_psi = 0.1*Energy_barrier # coefficient used to tilt the free energies psi (dependent on the c value)
 tilt_phi_phi0 = -0.1 # the phase value of the minima for the phi tilt function
 A_tilt_phi = 2/(-tilt_phi_phi0+1)**3  # phi^3 coefficient
 B_tilt_phi = -3/2*A_tilt_phi*(tilt_phi_phi0+1) # phi^2 coefficient
@@ -65,6 +66,7 @@ D_tilt_phi = A_tilt_phi/2*(1-3*tilt_phi_phi0) # constant
 
 # description of the solute diffusion
 k_c_0 = (L*dim_domain**2)/(2.3*10**5) # coefficient of solute diffusion (µm2.s-1)
+k_c_0 = 59500 # manual entry
 k_c_exp = 5 # decay of the solute diffusion because of the gel (in the exp term)
 
 # computing information
@@ -99,11 +101,12 @@ dict_user = {
 if IC_mode=='Spheres' :
     dict_user['R'] = R
     dict_user['R_var'] = R_var
-    dict_user['n_try'] = n_try
     dict_user['rho_g'] = rho_g
     dict_user['rho_water'] = rho_H20
     dict_user['w_g_target'] = w_g_target
-    dict_user['n_try_g'] = n_try_g
+    dict_user['n_steps'] = n_steps
+    dict_user['factor_int'] = factor_int
+    dict_user['n_try'] = n_try
 if IC_mode=='Powder' :
     dict_user['R'] = R
     dict_user['R_var'] = R_var
