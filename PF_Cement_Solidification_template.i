@@ -130,7 +130,7 @@
     coupled_variables = 'phi c'
     constant_names = 'W x_c A B C D'
     constant_expressions =
-    expression = 'W*16*(phi^2)*((1-phi)^2) + x_c*(c-0.95)*(A*phi^3+B*phi^2+C*phi+D)'
+    expression = 'W*16*(phi^2)*((1-phi)^2) + x_c*(c-0.5)*(A*phi^3+B*phi^2+C*phi+D)'
     enable_jit = true
     derivative_order = 1
   [../]

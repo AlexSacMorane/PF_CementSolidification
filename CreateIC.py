@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 import math
+import skfmm
 
 #-------------------------------------------------------------------------------
 # Functions
@@ -22,7 +23,7 @@ def Insert_Grains(dict_sample, dict_user):
     # Initialize the arrays
     M_psi = np.zeros((dict_user['n_mesh'],dict_user['n_mesh']))
     M_phi = np.zeros((dict_user['n_mesh'],dict_user['n_mesh']))
-    M_c = 0.95*np.ones((dict_user['n_mesh'],dict_user['n_mesh']))
+    M_c = 0.5*np.ones((dict_user['n_mesh'],dict_user['n_mesh']))
 
     # Initialize the mesh lists
     L_x = np.linspace(-dict_user['dim_domain']/2, dict_user['dim_domain']/2, dict_user['n_mesh'])
@@ -181,7 +182,7 @@ def Insert_Powder(dict_sample, dict_user):
     # Initialize the arrays
     M_psi = np.zeros((dict_user['n_mesh'],dict_user['n_mesh']))
     M_phi = np.zeros((dict_user['n_mesh'],dict_user['n_mesh']))
-    M_c = 0.95*np.ones((dict_user['n_mesh'],dict_user['n_mesh']))
+    M_c = 0.5*np.ones((dict_user['n_mesh'],dict_user['n_mesh']))
 
     # Initialize the mesh lists
     L_x = np.linspace(-dict_user['dim_domain']/2, dict_user['dim_domain']/2, dict_user['n_mesh'])
@@ -220,6 +221,26 @@ def Insert_Powder(dict_sample, dict_user):
         Surface_grain = np.sum(M_psi)*(L_x[1]-L_x[0])*(L_y[1]-L_y[0])
         Surface_water = dict_user['dim_domain']*dict_user['dim_domain'] - Surface_grain
         m_H20_m_cement = Surface_water*dict_user['rho_water']/(Surface_grain*dict_user['rho_g'])
+
+    # Rebuild psi array binary (threshold at 0.5)
+    for i_x in range(len(L_x)):
+        for i_y in range(len(L_y)):
+            if M_psi[i_y, i_x] > 0.5:
+                M_psi[i_y, i_x] = 0.5
+            else :
+                M_psi[i_y, i_x] = -0.5
+    # compute the signed distance function
+    sd = skfmm.distance(M_psi, dx = np.array([L_x[1]-L_x[0],L_y[1]-L_y[0]]))
+
+    # compute the phase field variable
+    for i_x in range(len(L_x)):
+        for i_y in range(len(L_y)):
+            if sd[i_y, i_x] > 6*dict_user['d_mesh']/2: # inside the grain
+                M_psi[i_y, i_x] = 1
+            elif sd[i_y, i_x] < -6*dict_user['d_mesh']/2: # outside the grain
+                M_psi[i_y, i_x] = 0
+            else : # in the interface
+                M_psi[i_y, i_x] = 0.5*(1+math.cos(math.pi*(-sd[i_y, i_x]+6*dict_user['d_mesh']/2)/(6*dict_user['d_mesh'])))
 
     # Plot maps
     fig, ((ax1),(ax2),(ax3)) = plt.subplots(3,1,figsize=(9,25))
@@ -300,7 +321,7 @@ def Create_Petersen(dict_sample, dict_user):
     '''
     # Initialize the arrays
     M_phi = np.zeros((dict_user['n_mesh'],dict_user['n_mesh']))
-    M_c = 0.95*np.ones((dict_user['n_mesh'],dict_user['n_mesh']))
+    M_c = 0.5*np.ones((dict_user['n_mesh'],dict_user['n_mesh']))
 
     # Initialize the mesh lists
     L_x = np.linspace(-dict_user['dim_domain']/2, dict_user['dim_domain']/2, dict_user['n_mesh'])
