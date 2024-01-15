@@ -144,18 +144,6 @@ if dict_user['IC_mode']=='Petersen':
     Create_Petersen(dict_sample, dict_user)
 if dict_user['IC_mode']=='Powder':
     Insert_Powder(dict_sample, dict_user)
-    # Write .i for IC
-    Adapt_I_IC(dict_sample, dict_user)
-    # run PF simulation for IC
-    os.system('mpiexec -n '+str(dict_user['n_proc'])+' ~/projects/moose/modules/phase_field/phase_field-opt -i PF_Cement_Solidification_IC.i')
-    # sort .i and .e files
-    os.rename('PF_Cement_Solidification_IC.i','i/PF_Cement_Solidification_IC.i')
-    os.rename('PF_Cement_Solidification_IC_out.e','e/PF_Cement_Solidification_IC_out.e')
-    # Sort .vtk files
-    Sort_vtk_IC(dict_user)
-
-
-raise ValueError('Stop')
 
 # Write .i
 Adapt_I(dict_sample, dict_user)
