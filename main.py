@@ -29,10 +29,10 @@ if IC_mode=='Spheres' :
     # Description of the grain (size distribution)
     R = 17 # size of the grain of cement (µm)
     R_var = 0.97 # variance of the size of the grao, pf cement
-    w_g_target = 0.5 # mass ratio water/cement targetted
+    w_g_target = 0.45 # mass ratio water/cement targetted
     rho_H20 = 1000 # density water (kg.m-3)
     rho_g = 3200 # density cement (kg.m-3)
-    n_steps = 10 # number of step increasing grains
+    n_steps = 15 # number of step increasing grains
     factor_int = 12 # additional distance (considering interface overlapping)
     n_try = 100 # maximum tries to determine a compatible configuration
 

@@ -63,19 +63,19 @@ def Insert_Grains(dict_sample, dict_user):
         # Random radius of the grain
         R_try = dict_user['R']*(1+dict_user['R_var']*(random.random()-0.5)*2)
         # Random position of the grain center
-        x_try = (dict_user['dim_domain']/2-R_try)*(random.random()-0.5)*2
-        y_try = (dict_user['dim_domain']/2-R_try)*(random.random()-0.5)*2
+        x_try = (dict_user['dim_domain']/2+R_try)*(random.random()-0.5)*2
+        y_try = (dict_user['dim_domain']/2+R_try)*(random.random()-0.5)*2
         # Save grain
         L_pos_grains.append(np.array([x_try, y_try]))
         L_radius_grains.append(R_try)
         Surface_grain = Surface_grain + math.pi*R_try**2
-        m_H20_m_cement = ((dict_user['dim_domain']**2-Surface_grain)*dict_user['rho_water'])/(Surface_grain*dict_user['rho_g'])
+        m_H20_m_cement = (((dict_user['dim_domain']+2*dict_user['R'])**2-Surface_grain)*dict_user['rho_water'])/(Surface_grain*dict_user['rho_g'])
 
     # print result
     print(len(L_radius_grains),'grains inserted')
     print('psd:', round(np.mean(L_radius_grains),1),'(mean)', round(np.min(L_radius_grains),1),'(min)', round(np.max(L_radius_grains),1),'(max)')
     print('psd targetted:', round(dict_user['R'],1),'(mean)', round(dict_user['R']*(1-dict_user['R_var']),1),'(min)', round(dict_user['R']*(1+dict_user['R_var']),1),'(max)')
-    print('m_H20/m_cement:', round(((dict_user['dim_domain']**2-Surface_grain)*dict_user['rho_water'])/(Surface_grain*dict_user['rho_g']),2),'/',dict_user['w_g_target'],'targetted')
+    print('m_H20/m_cement:', round((((dict_user['dim_domain']+2*dict_user['R'])**2-Surface_grain)*dict_user['rho_water'])/(Surface_grain*dict_user['rho_g']),2),'/',dict_user['w_g_target'],'targetted')
 
     # Move grains (no overlap conditions)
     # increase steply the radius
@@ -113,16 +113,20 @@ def Insert_Grains(dict_sample, dict_user):
                 pos = L_pos_grains[i_g]
                 rad = L_radius_grains[i_g]
                 # check limits
-                if pos[0] < - dict_user['dim_domain']/2 + rad+dict_user['factor_int']: # -x
-                    pos[0] = - dict_user['dim_domain']/2 + rad+dict_user['factor_int']
-                if pos[0] > dict_user['dim_domain']/2 - rad-dict_user['factor_int']: # +x
-                    pos[0] = dict_user['dim_domain']/2 - rad-dict_user['factor_int']
-                if pos[1] < - dict_user['dim_domain']/2 + rad+dict_user['factor_int']: # -y
-                    pos[1] = - dict_user['dim_domain']/2 + rad+dict_user['factor_int']
-                if pos[1] > dict_user['dim_domain']/2 - rad-dict_user['factor_int']: # +y
-                    pos[1] = dict_user['dim_domain']/2 - rad-dict_user['factor_int']
+                if pos[0] < - dict_user['dim_domain']/2 - rad: # -x
+                    pos[0] = - dict_user['dim_domain']/2 - rad + rad*random.random()*2
+                if pos[0] > dict_user['dim_domain']/2 + rad: # +x
+                    pos[0] = dict_user['dim_domain']/2 + rad - rad*random.random()*2
+                if pos[1] < - dict_user['dim_domain']/2 - rad: # -y
+                    pos[1] = - dict_user['dim_domain']/2 - rad + rad*random.random()*2
+                if pos[1] > dict_user['dim_domain']/2 + rad: # +y
+                    pos[1] = dict_user['dim_domain']/2 + rad - rad*random.random()*2
             # check overlapig
             overlap, L_overlap = check_overlap(L_radius_grains, L_pos_grains, i_step, dict_user['n_steps'], dict_user['factor_int'])
+
+    # print result
+    if overlap :
+        print('Last grain organization:', len(L_overlap), 'overlaps')
 
     # Compute phi, psi
     for i_grain in range(len(L_radius_grains)):
@@ -151,6 +155,11 @@ def Insert_Grains(dict_sample, dict_user):
                         M_psi[-1-i_y, i_x] = 0
                     else :
                         M_psi[-1-i_y, i_x] = 0.5*(1+math.cos(math.pi*(distance-r_grain+(6*dict_user['d_mesh'])/2)/(6*dict_user['d_mesh'])))
+
+    # print result
+    surface_cement = np.sum(M_psi)
+    surface_water = M_psi.size - surface_cement
+    print('Final ratio', round(dict_user['rho_water']*surface_water/(dict_user['rho_g']*surface_cement),2))
 
     # Plot maps
     fig, ((ax1),(ax2),(ax3)) = plt.subplots(3,1,figsize=(9,25))
