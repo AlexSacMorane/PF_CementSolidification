@@ -56,9 +56,9 @@ Mobility = d_mesh/0.12 # kinetic of free energies evolution (phi/psi) (µm.s-1)
 L = 0.12*Mobility/d_mesh # Mobility value used for free energies (phi/psi) (s-1)
 a_phi = 1 # conversion term (phi -> c)
 a_psi = 2.35 # conversion term (psi -> c)
-chi_c_phi = 100*Energy_barrier # coefficient used to tilt the free energies phi (dependent on the c value)
+chi_c_phi = 0.1*Energy_barrier # coefficient used to tilt the free energies phi (dependent on the c value)
 chi_c_psi = 0.1*Energy_barrier # coefficient used to tilt the free energies psi (dependent on the c value)
-tilt_phi_phi0 = -0.1 # the phase value of the minima for the phi tilt function
+tilt_phi_phi0 = 0 # the phase value of the minima for the phi tilt function
 A_tilt_phi = 2/(-tilt_phi_phi0+1)**3  # phi^3 coefficient
 B_tilt_phi = -3/2*A_tilt_phi*(tilt_phi_phi0+1) # phi^2 coefficient
 C_tilt_phi = 3*A_tilt_phi*tilt_phi_phi0 # phi coefficient
@@ -66,11 +66,10 @@ D_tilt_phi = A_tilt_phi/2*(1-3*tilt_phi_phi0) # constant
 
 # description of the solute diffusion
 k_c_0 = (L*dim_domain**2)/(2.3*10**5) # coefficient of solute diffusion (µm2.s-1)
-k_c_0 = 59500 # manual entry
-k_c_exp = 5 # decay of the solute diffusion because of the gel (in the exp term)
+k_c_exp = 0 # decay of the solute diffusion because of the gel (in the exp term)
 
 # computing information
-n_proc = 6 # number of processor used
+n_proc = 20 # number of processor used
 
 # compute performances
 tic = time.perf_counter()

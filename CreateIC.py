@@ -46,7 +46,7 @@ def Insert_Grains(dict_sample, dict_user):
     '''
     # Initialize the arrays
     M_psi = np.zeros((dict_user['n_mesh'],dict_user['n_mesh']))
-    M_phi = np.zeros((dict_user['n_mesh'],dict_user['n_mesh']))
+    M_phi = -0.5*np.ones((dict_user['n_mesh'],dict_user['n_mesh']))
     M_c = 0.5*np.ones((dict_user['n_mesh'],dict_user['n_mesh']))
 
     # Initialize the mesh lists
@@ -140,7 +140,7 @@ def Insert_Grains(dict_sample, dict_user):
         L_search = list(abs(np.array(L_y-y_grain)))
         i_y_center = L_search.index(min(L_search))
         # compute the number of node (depending on the radius)
-        n_nodes = int(r_grain/(L_x[1]-L_x[0]))+4
+        n_nodes = int(r_grain/(L_x[1]-L_x[0]))+15
         for i_x in range(max(0,i_x_center-n_nodes),min(i_x_center+n_nodes+1,len(L_x))):
             for i_y in range(max(0,i_y_center-n_nodes),min(i_y_center+n_nodes+1,len(L_y))):
                 x = L_x[i_x]
@@ -155,6 +155,23 @@ def Insert_Grains(dict_sample, dict_user):
                         M_psi[-1-i_y, i_x] = 0
                     else :
                         M_psi[-1-i_y, i_x] = 0.5*(1+math.cos(math.pi*(distance-r_grain+(6*dict_user['d_mesh'])/2)/(6*dict_user['d_mesh'])))
+                # Update map phi
+                if M_phi[-1-i_y, i_x] == -0.5: # do not erase data already written
+                    if r_grain <= distance and distance <= r_grain + 6*dict_user['d_mesh']/2 + dict_user['d_mesh'] + 6*dict_user['d_mesh']/2:
+                        M_phi[-1-i_y, i_x] = 0.5
+
+    # compute the signed distance function
+    sd = skfmm.distance(M_phi, dx = np.array([L_x[1]-L_x[0],L_y[1]-L_y[0]]))
+
+    # compute the phase field variable
+    for i_x in range(len(L_x)):
+        for i_y in range(len(L_y)):
+            if sd[i_y, i_x] > 6*dict_user['d_mesh']/2: # inside the grain
+                M_phi[i_y, i_x] = 1
+            elif sd[i_y, i_x] < -6*dict_user['d_mesh']/2: # outside the grain
+                M_phi[i_y, i_x] = 0
+            else : # in the interface
+                M_phi[i_y, i_x] = 0.5*(1+math.cos(math.pi*(-sd[i_y, i_x]+6*dict_user['d_mesh']/2)/(6*dict_user['d_mesh'])))
 
     # print result
     surface_cement = np.sum(M_psi)
