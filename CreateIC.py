@@ -36,7 +36,7 @@ def check_overlap(L_radius_grains, L_pos_grains, i_step, n_steps, factor_int):
 
 #-------------------------------------------------------------------------------
 
-def Insert_Grains(dict_sample, dict_user):
+def Insert_Grains_nocontrol(dict_sample, dict_user):
     '''
     Insert n_grains grains in the domain. The grains are circle defined by a radius (uniform distribution).
     The position of the grains is randomly set, avoiding overlap between particules.
@@ -249,7 +249,7 @@ def Insert_Grains(dict_sample, dict_user):
 
 #-------------------------------------------------------------------------------
 
-def Insert_Grains_control(dict_sample, dict_user):
+def Insert_Grains(dict_sample, dict_user):
     '''
     Insert n_grains grains in the domain. The grains are circle defined by a radius (uniform distribution).
     The position of the grains is randomly set, avoiding overlap between particules.

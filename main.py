@@ -54,10 +54,10 @@ Energy_barrier = 1 # the energy barrier value used for free energies description
 kappa = 59.5*Energy_barrier*d_mesh*d_mesh # gradient coefficient for free energies phi/psi
 Mobility = d_mesh/0.12 # kinetic of free energies evolution (phi/psi) (µm.s-1)
 L = 0.12*Mobility/d_mesh # Mobility value used for free energies (phi/psi) (s-1)
-a_phi = 0.1 # conversion term (phi -> c)
-a_psi = 0.235 # conversion term (psi -> c)
-chi_c_phi = 5*d_mesh*Energy_barrier # coefficient used to tilt the free energies phi (dependent on the c value)
-chi_c_psi = 2*d_mesh*Energy_barrier # coefficient used to tilt the free energies psi (dependent on the c value)
+a_psi = 4 # conversion term (psi -> c)
+a_phi = a_psi/2.35 # conversion term (phi -> c)
+chi_c_phi = 10*d_mesh*Energy_barrier # coefficient used to tilt the free energies phi (dependent on the c value)
+chi_c_psi = 5*d_mesh*Energy_barrier # coefficient used to tilt the free energies psi (dependent on the c value)
 tilt_phi_phi0 = 0 # the phase value of the minima for the phi tilt function
 A_tilt_phi = 2/(-tilt_phi_phi0+1)**3  # phi^3 coefficient
 B_tilt_phi = -3/2*A_tilt_phi*(tilt_phi_phi0+1) # phi^2 coefficient
@@ -66,6 +66,7 @@ D_tilt_phi = A_tilt_phi/2*(1-3*tilt_phi_phi0) # constant
 
 # description of the solute diffusion
 k_c_0 = (L*dim_domain**2)/(2.3*10**5) # coefficient of solute diffusion (µm2.s-1)
+k_c_0 = 50000
 k_c_exp = 0 # decay of the solute diffusion because of the gel (in the exp term)
 
 # computing information
@@ -141,7 +142,7 @@ dict_sample = {}
 
 # Create initial configuration
 if dict_user['IC_mode']=='Spheres':
-    Insert_Grains_control(dict_sample, dict_user)
+    Insert_Grains(dict_sample, dict_user)
 if dict_user['IC_mode']=='Petersen':
     Create_Petersen(dict_sample, dict_user)
 if dict_user['IC_mode']=='Powder':
