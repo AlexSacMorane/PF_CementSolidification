@@ -29,12 +29,12 @@ if IC_mode=='Spheres' :
     # Description of the grain (size distribution)
     R = 17 # size of the grain of cement (µm)
     R_var = 0.97 # variance of the size of the grao, pf cement
-    w_g_target = 0.45 # mass ratio water/cement targetted
+    w_g_target = 0.42 # mass ratio water/cement targetted
     rho_H20 = 1000 # density water (kg.m-3)
     rho_g = 3200 # density cement (kg.m-3)
     n_steps = 15 # number of step increasing grains
-    factor_int = 12 # additional distance (considering interface overlapping)
-    n_try = 100 # maximum tries to determine a compatible configuration
+    factor_int = 8 # additional distance (considering interface overlapping)
+    n_try = 50 # maximum tries to determine a compatible configuration
 
 if IC_mode=='Powder':
     # Description of the powder
@@ -45,7 +45,7 @@ if IC_mode=='Powder':
     rho_g = 3200 # density cement (kg.m-3)
 
 # Description of the mesh
-n_mesh = 400 # number of element in one direction of the mesh
+n_mesh = 600 # number of element in one direction of the mesh
              # the number of nodes is n_mesh+1
 d_mesh = dim_domain/n_mesh # size of the mesh element
 
@@ -54,11 +54,11 @@ Energy_barrier = 1 # the energy barrier value used for free energies description
 kappa = 59.5*Energy_barrier*d_mesh*d_mesh # gradient coefficient for free energies phi/psi
 Mobility = d_mesh/0.12 # kinetic of free energies evolution (phi/psi) (µm.s-1)
 L = 0.12*Mobility/d_mesh # Mobility value used for free energies (phi/psi) (s-1)
-a_phi = 1 # conversion term (phi -> c)
-a_psi = 2.35 # conversion term (psi -> c)
-chi_c_phi = 100*Energy_barrier # coefficient used to tilt the free energies phi (dependent on the c value)
-chi_c_psi = 0.1*Energy_barrier # coefficient used to tilt the free energies psi (dependent on the c value)
-tilt_phi_phi0 = -0.1 # the phase value of the minima for the phi tilt function
+a_phi = 0.1 # conversion term (phi -> c)
+a_psi = 0.235 # conversion term (psi -> c)
+chi_c_phi = 5*d_mesh*Energy_barrier # coefficient used to tilt the free energies phi (dependent on the c value)
+chi_c_psi = 2*d_mesh*Energy_barrier # coefficient used to tilt the free energies psi (dependent on the c value)
+tilt_phi_phi0 = 0 # the phase value of the minima for the phi tilt function
 A_tilt_phi = 2/(-tilt_phi_phi0+1)**3  # phi^3 coefficient
 B_tilt_phi = -3/2*A_tilt_phi*(tilt_phi_phi0+1) # phi^2 coefficient
 C_tilt_phi = 3*A_tilt_phi*tilt_phi_phi0 # phi coefficient
@@ -66,11 +66,10 @@ D_tilt_phi = A_tilt_phi/2*(1-3*tilt_phi_phi0) # constant
 
 # description of the solute diffusion
 k_c_0 = (L*dim_domain**2)/(2.3*10**5) # coefficient of solute diffusion (µm2.s-1)
-k_c_0 = 59500 # manual entry
-k_c_exp = 5 # decay of the solute diffusion because of the gel (in the exp term)
+k_c_exp = 0 # decay of the solute diffusion because of the gel (in the exp term)
 
 # computing information
-n_proc = 6 # number of processor used
+n_proc = 20 # number of processor used
 
 # compute performances
 tic = time.perf_counter()
@@ -142,7 +141,7 @@ dict_sample = {}
 
 # Create initial configuration
 if dict_user['IC_mode']=='Spheres':
-    Insert_Grains(dict_sample, dict_user)
+    Insert_Grains_control(dict_sample, dict_user)
 if dict_user['IC_mode']=='Petersen':
     Create_Petersen(dict_sample, dict_user)
 if dict_user['IC_mode']=='Powder':
