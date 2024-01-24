@@ -201,7 +201,7 @@ def Compute_Sphi_Spsi_Sc(dict_pp, dict_sample, dict_user):
         L_S_phi.append(np.sum(dict_pp['L_L_phi'][iteration]))
         L_S_psi.append(np.sum(dict_pp['L_L_psi'][iteration]))
         L_S_c.append(np.sum(dict_pp['L_L_c'][iteration]))
-        L_S_mass.append(L_S_c[-1] + dict_user['alpha_phi']*L_S_phi[-1] + dict_user['alpha_psi']*L_S_psi[-1])
+        L_S_mass.append(L_S_c[-1] + L_S_phi[-1] + 2.35*L_S_psi[-1])
 
     # save data
     dict_pp['L_S_phi'] = L_S_phi
@@ -230,7 +230,7 @@ def Compute_Sphi_Spsi_Sc(dict_pp, dict_sample, dict_user):
     # mass conservation
     ax4.plot(L_S_mass)
     ax4.set_xlabel('Iteration (-)')
-    ax4.set_title(r'$\Sigma c + \alpha_\phi \Sigma \phi + \alpha_\psi \Sigma \psi$',fontsize = title_fontsize)
+    ax4.set_title(r'$\Sigma c + \Sigma \phi + 2.35\Sigma \psi$',fontsize = title_fontsize)
 
     fig.suptitle(r'$\Sigma$ in the domain',fontsize = title_fontsize)
     fig.savefig('png/tracker_Ss_psi_phi_c_mass.png')
@@ -257,7 +257,7 @@ def Compute_Mphi_Mpsi_Mc(dict_pp, dict_sample, dict_user):
         L_M_phi.append(np.mean(dict_pp['L_L_phi'][iteration]))
         L_M_psi.append(np.mean(dict_pp['L_L_psi'][iteration]))
         L_M_c.append(np.mean(dict_pp['L_L_c'][iteration]))
-        L_M_mass.append(L_M_c[-1] + dict_user['a_phi']*L_M_phi[-1] + dict_user['a_psi']*L_M_psi[-1])
+        L_M_mass.append(L_M_c[-1] + L_M_phi[-1] + 2.35*L_M_psi[-1])
 
     # save data
     dict_pp['L_M_phi'] = L_M_phi
@@ -284,7 +284,7 @@ def Compute_Mphi_Mpsi_Mc(dict_pp, dict_sample, dict_user):
     # mass conservation
     ax4.plot(L_M_mass)
     ax4.set_xlabel('Iteration (-)')
-    ax4.set_title(r'Mean $c$ + $\alpha_\phi$ Mean $\phi$ + $\alpha_\psi$ Mean $\psi$',fontsize = title_fontsize)
+    ax4.set_title(r'Mean $c$ + Mean $\phi$ + 2.35 Mean $\psi$',fontsize = title_fontsize)
 
     fig.savefig('png/tracker_Ms_psi_phi_c_mass.png')
     plt.close(fig)

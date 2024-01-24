@@ -19,27 +19,27 @@ from WriteI import *
 #------------------------------------------------------------------------------
 
 # Description of the domain (total)
-dim_domain = 500 # size of the study domain (µm)
+dim_domain = 320 # size of the study domain (µm)
 
 # Definition of the IC
 # Available : Petersen, Spheres, Powder
-IC_mode = 'Spheres'
+IC_mode = 'Powder'
 
 if IC_mode=='Spheres' :
     # Description of the grain (size distribution)
-    R = 17 # size of the grain of cement (µm)
-    R_var = 0.97 # variance of the size of the grao, pf cement
-    w_g_target = 0.42 # mass ratio water/cement targetted
+    R = 15 # size of the grain of cement (µm)
+    R_var = 1 # variance of the size of the grao, pf cement
+    w_g_target = 0.5 # mass ratio water/cement targetted
     rho_H20 = 1000 # density water (kg.m-3)
     rho_g = 3200 # density cement (kg.m-3)
-    n_steps = 15 # number of step increasing grains
-    factor_int = 8 # additional distance (considering interface overlapping)
+    factor_int = 10 # additional distance (considering interface overlapping)
     n_try = 50 # maximum tries to determine a compatible configuration
+    #n_steps = 15 # number of step increasing grains, use for no control IC
 
 if IC_mode=='Powder':
     # Description of the powder
     R = 10 # size of the grain of cement (µm)
-    R_var = 0.9 # variance of the size of the grao, pf cement
+    R_var = 1 # variance of the size of the grao, pf cement
     w_g_target = 0.5 # mass ratio water/cement targetted
     rho_H20 = 1000 # density water (kg.m-3)
     rho_g = 3200 # density cement (kg.m-3)
@@ -54,7 +54,7 @@ Energy_barrier = 1 # the energy barrier value used for free energies description
 kappa = 59.5*Energy_barrier*d_mesh*d_mesh # gradient coefficient for free energies phi/psi
 Mobility = d_mesh/0.12 # kinetic of free energies evolution (phi/psi) (µm.s-1)
 L = 0.12*Mobility/d_mesh # Mobility value used for free energies (phi/psi) (s-1)
-a_psi = 4 # conversion term (psi -> c)
+a_psi = 5 # conversion term (psi -> c)
 a_phi = a_psi/2.35 # conversion term (phi -> c)
 chi_c_phi = 10*d_mesh*Energy_barrier # coefficient used to tilt the free energies phi (dependent on the c value)
 chi_c_psi = 5*d_mesh*Energy_barrier # coefficient used to tilt the free energies psi (dependent on the c value)
@@ -104,9 +104,9 @@ if IC_mode=='Spheres' :
     dict_user['rho_g'] = rho_g
     dict_user['rho_water'] = rho_H20
     dict_user['w_g_target'] = w_g_target
-    dict_user['n_steps'] = n_steps
     dict_user['factor_int'] = factor_int
     dict_user['n_try'] = n_try
+    #dict_user['n_steps'] = n_steps, use for no control
 if IC_mode=='Powder' :
     dict_user['R'] = R
     dict_user['R_var'] = R_var
@@ -187,7 +187,7 @@ Compute_DegreeHydration(dict_pp, dict_sample, dict_user)
 Compute_Mphi_Mpsi_Mc(dict_pp, dict_sample, dict_user)
 Compute_Sphi_Spsi_Sc(dict_pp, dict_sample, dict_user)
 Compute_macro_micro_porosity(dict_pp, dict_sample, dict_user)
-Compute_SpecificSurf(dict_pp, dict_sample, dict_user)
+#Compute_SpecificSurf(dict_pp, dict_sample, dict_user)
 #Compute_ChordLenght_Density_Func(dict_pp, dict_sample, dict_user)
 #Compute_PoreSize_Func(dict_pp, dict_sample, dict_user)
 

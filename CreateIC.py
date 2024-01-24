@@ -352,7 +352,7 @@ def Insert_Grains(dict_sample, dict_user):
         # compute surface grains and water
         Surface_grain = np.sum(M_psi)/M_psi.size*dict_user['dim_domain']*dict_user['dim_domain']
         Surface_water = dict_user['dim_domain']*dict_user['dim_domain'] - Surface_grain
-        #~compute ratio
+        # compute ratio
         m_H20_m_cement = (Surface_water*dict_user['rho_water'])/(Surface_grain*dict_user['rho_g'])
         # output
         print('Compute IC:',round(m_H20_m_cement,2),'/',dict_user['w_g_target'],'targetted')
@@ -512,10 +512,10 @@ def Insert_Powder(dict_sample, dict_user):
     m_H20_m_cement = 2*dict_user['w_g_target']
     while m_H20_m_cement > dict_user['w_g_target']:
         # Random radius of the grain
-        r_grain = dict_user['R']*(1+dict_user['R_var']*(random.random()-0.5)*2)
+        r_grain = max(dict_user['R']*(1+dict_user['R_var']*(random.random()-0.5)*2), dict_user['d_mesh']*5)
         # Random position of the grain center
-        x_grain = (dict_user['dim_domain']/2-r_grain)*(random.random()-0.5)*2
-        y_grain = (dict_user['dim_domain']/2-r_grain)*(random.random()-0.5)*2
+        x_grain = (dict_user['dim_domain']/2+r_grain)*(random.random()-0.5)*2
+        y_grain = (dict_user['dim_domain']/2+r_grain)*(random.random()-0.5)*2
         Center_grain = np.array([x_grain, y_grain])
         # find the nearest node of the center
         L_search = list(abs(np.array(L_x-x_grain)))
@@ -523,7 +523,7 @@ def Insert_Powder(dict_sample, dict_user):
         L_search = list(abs(np.array(L_y-y_grain)))
         i_y_center = L_search.index(min(L_search))
         # compute the number of node (depending on the radius)
-        n_nodes = int(r_grain/(L_x[1]-L_x[0]))+4
+        n_nodes = int(r_grain/(L_x[1]-L_x[0]))+15
         for i_x in range(max(0,i_x_center-n_nodes),min(i_x_center+n_nodes+1,len(L_x))):
             for i_y in range(max(0,i_y_center-n_nodes),min(i_y_center+n_nodes+1,len(L_y))):
                 x = L_x[i_x]
@@ -538,26 +538,37 @@ def Insert_Powder(dict_sample, dict_user):
         Surface_grain = np.sum(M_psi)*(L_x[1]-L_x[0])*(L_y[1]-L_y[0])
         Surface_water = dict_user['dim_domain']*dict_user['dim_domain'] - Surface_grain
         m_H20_m_cement = Surface_water*dict_user['rho_water']/(Surface_grain*dict_user['rho_g'])
+        # output
+        print('Compute IC:',round(m_H20_m_cement,2),'/',dict_user['w_g_target'],'targetted')
 
-    # Rebuild psi array binary (threshold at 0.5)
-    for i_x in range(len(L_x)):
-        for i_y in range(len(L_y)):
-            if M_psi[i_y, i_x] > 0.5:
-                M_psi[i_y, i_x] = 0.5
-            else :
-                M_psi[i_y, i_x] = -0.5
+    # adapt M_psi
+    M_psi = M_psi - 0.5
+
     # compute the signed distance function
-    sd = skfmm.distance(M_psi, dx = np.array([L_x[1]-L_x[0],L_y[1]-L_y[0]]))
+    sd_psi = skfmm.distance(M_psi, dx = np.array([L_x[1]-L_x[0],L_y[1]-L_y[0]]))
 
     # compute the phase field variable
     for i_x in range(len(L_x)):
         for i_y in range(len(L_y)):
-            if sd[i_y, i_x] > 6*dict_user['d_mesh']/2: # inside the grain
+            # psi
+            if sd_psi[i_y, i_x] > 6*dict_user['d_mesh']/2: # inside the grain
                 M_psi[i_y, i_x] = 1
-            elif sd[i_y, i_x] < -6*dict_user['d_mesh']/2: # outside the grain
+            elif sd_psi[i_y, i_x] < -6*dict_user['d_mesh']/2: # outside the grain
                 M_psi[i_y, i_x] = 0
             else : # in the interface
-                M_psi[i_y, i_x] = 0.5*(1+math.cos(math.pi*(-sd[i_y, i_x]+6*dict_user['d_mesh']/2)/(6*dict_user['d_mesh'])))
+                M_psi[i_y, i_x] = 0.5*(1+math.cos(math.pi*(-sd_psi[i_y, i_x]+6*dict_user['d_mesh']/2)/(6*dict_user['d_mesh'])))
+            # phi
+            if -6*dict_user['d_mesh']/2 < sd_psi[i_y, i_x] and sd_psi[i_y, i_x] < 6*dict_user['d_mesh']/2: # int grain-gel
+                M_phi[i_y, i_x] = 0.5*(1+math.cos(math.pi*(sd_psi[i_y, i_x]+6*dict_user['d_mesh']/2)/(6*dict_user['d_mesh'])))
+            elif -6*dict_user['d_mesh']/2 -dict_user['d_mesh'] <= sd_psi[i_y, i_x] and sd_psi[i_y, i_x] <= -6*dict_user['d_mesh']/2: # gel
+                M_phi[i_y, i_x] = 1
+            elif -6*dict_user['d_mesh']/2 -dict_user['d_mesh'] -6*dict_user['d_mesh'] < sd_psi[i_y, i_x] and sd_psi[i_y, i_x] < -6*dict_user['d_mesh']/2 -dict_user['d_mesh']: # int gel-water
+                M_phi[i_y, i_x] = 0.5*(1+math.cos(math.pi*(-sd_psi[i_y, i_x]-dict_user['d_mesh']-6*dict_user['d_mesh']+6*dict_user['d_mesh']/2)/(6*dict_user['d_mesh'])))
+
+    # result
+    print()
+    print('Mean value of psi:', round(np.sum(M_psi)/M_psi.size,2))
+    print('Mean value of phi:', round(np.sum(M_phi)/M_phi.size,2))
 
     # Plot maps
     fig, ((ax1),(ax2),(ax3)) = plt.subplots(3,1,figsize=(9,25))

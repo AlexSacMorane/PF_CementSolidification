@@ -3,7 +3,7 @@
 #-------------------------------------------------------------------------------
 
 import pickle
-from PostProccess import *
+#from PostProccess import *
 
 #-------------------------------------------------------------------------------
 # User
@@ -20,6 +20,9 @@ name_file_3 = 'dict/dict_pp.dict'
 # Save dicts
 dict_sample = pickle.load(open(name_file_1,'rb'))
 dict_user = pickle.load(open(name_file_2,'rb'))
+dict_pp = pickle.load(open(name_file_3,'rb'))
+
+raise ValueError('Stop')
 
 #-------------------------------------------------------------------------------
 # Work
