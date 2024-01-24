@@ -13,9 +13,6 @@ import shutil
 import random
 import skfmm
 
-#Own
-from SortFiles import index_to_str
-
 #-------------------------------------------------------------------------------
 # Functions
 #-------------------------------------------------------------------------------
@@ -194,6 +191,8 @@ def Compute_Sphi_Spsi_Sc(dict_pp, dict_sample, dict_user):
     L_S_psi = []
     L_S_c = []
     L_S_mass = []
+    L_xi = []
+    M_psi_0 = None
 
     # iterate on the time
     for iteration in range(len(dict_pp['L_L_psi'])):
@@ -202,6 +201,12 @@ def Compute_Sphi_Spsi_Sc(dict_pp, dict_sample, dict_user):
         L_S_psi.append(np.sum(dict_pp['L_L_psi'][iteration]))
         L_S_c.append(np.sum(dict_pp['L_L_c'][iteration]))
         L_S_mass.append(L_S_c[-1] + dict_user['a_phi']*L_S_phi[-1] + dict_user['a_psi']*L_S_psi[-1])
+        # hydration
+        S_psi = np.sum(dict_pp['L_L_psi'][iteration])
+        if M_psi_0 == None:
+            M_psi_0 = S_psi/len(dict_pp['L_L_psi'][iteration])
+        # Compute mean
+        L_xi.append(1-(S_psi/len(dict_pp['L_L_psi'][iteration]))/M_psi_0)
 
     # save data
     dict_pp['L_S_phi'] = L_S_phi
@@ -216,20 +221,20 @@ def Compute_Sphi_Spsi_Sc(dict_pp, dict_sample, dict_user):
     title_fontsize = 20
 
     # psi
-    ax1.plot(L_S_psi)
+    ax1.plot(L_xi, L_S_psi)
     #ax1.set_xlabel('Iteration (-)')
     ax1.set_title(r'$\Sigma \psi$',fontsize = title_fontsize)
     # phi
-    ax2.plot(L_S_phi)
+    ax2.plot(L_xi, L_S_phi)
     #ax2.set_xlabel('Iteration (-)')
     ax2.set_title(r'$\Sigma \phi$',fontsize = title_fontsize)
     # c
-    ax3.plot(L_S_c)
-    ax3.set_xlabel('Iteration (-)')
+    ax3.plot(L_xi, L_S_c)
+    ax3.set_xlabel(r'Degree of hydration $\xi$ (-)')
     ax3.set_title(r'$\Sigma c$',fontsize = title_fontsize)
     # mass conservation
-    ax4.plot(L_S_mass)
-    ax4.set_xlabel('Iteration (-)')
+    ax4.plot(L_xi, L_S_mass)
+    ax4.set_xlabel(r'Degree of hydration $\xi$ (-)')
     ax4.set_title(r'$\Sigma c + \alpha_\phi \Sigma \phi + \alpha_\psi \Sigma \psi$',fontsize = title_fontsize)
 
     fig.suptitle(r'$\Sigma$ in the domain',fontsize = title_fontsize)
@@ -250,6 +255,8 @@ def Compute_Mphi_Mpsi_Mc(dict_pp, dict_sample, dict_user):
     L_M_psi = []
     L_M_c = []
     L_M_mass = []
+    L_xi = []
+    M_psi_0 = None
 
     # iterate on the time
     for iteration in range(len(dict_pp['L_L_psi'])):
@@ -258,6 +265,12 @@ def Compute_Mphi_Mpsi_Mc(dict_pp, dict_sample, dict_user):
         L_M_psi.append(np.mean(dict_pp['L_L_psi'][iteration]))
         L_M_c.append(np.mean(dict_pp['L_L_c'][iteration]))
         L_M_mass.append(L_M_c[-1] + dict_user['a_phi']*L_M_phi[-1] + dict_user['a_psi']*L_M_psi[-1])
+        # hydration
+        S_psi = np.sum(dict_pp['L_L_psi'][iteration])
+        if M_psi_0 == None:
+            M_psi_0 = S_psi/len(dict_pp['L_L_psi'][iteration])
+        # Compute mean
+        L_xi.append(1-(S_psi/len(dict_pp['L_L_psi'][iteration]))/M_psi_0)
 
     # save data
     dict_pp['L_M_phi'] = L_M_phi
@@ -270,20 +283,20 @@ def Compute_Mphi_Mpsi_Mc(dict_pp, dict_sample, dict_user):
     # parameters
     title_fontsize = 20
     # psi
-    ax1.plot(L_M_psi)
+    ax1.plot(L_xi, L_M_psi)
     #ax1.set_xlabel('Iteration (-)')
     ax1.set_title(r'Mean $\psi$',fontsize = title_fontsize)
     # phi
-    ax2.plot(L_M_phi)
+    ax2.plot(L_xi, L_M_phi)
     #ax2.set_xlabel('Iteration (-)')
     ax2.set_title(r'Mean $\phi$',fontsize = title_fontsize)
     # c
-    ax3.plot(L_M_c)
-    ax3.set_xlabel('Iteration (-)')
+    ax3.plot(L_xi, L_M_c)
+    ax3.set_xlabel(r'Degree of hydration $\xi$ (-)')
     ax3.set_title(r'Mean $c$',fontsize = title_fontsize)
     # mass conservation
-    ax4.plot(L_M_mass)
-    ax4.set_xlabel('Iteration (-)')
+    ax4.plot(L_xi, L_M_mass)
+    ax3.set_xlabel(r'Degree of hydration $\xi$ (-)')
     ax4.set_title(r'Mean $c$ + $\alpha_\phi$ Mean $\phi$ + $\alpha_\psi$ Mean $\psi$',fontsize = title_fontsize)
 
     fig.savefig('png/tracker_Ms_psi_phi_c_mass.png')
@@ -318,7 +331,7 @@ def Compute_macro_micro_porosity(dict_pp, dict_sample, dict_user):
                 S_p_macro = S_p_macro + 1
             # micro porosity
             if dict_pp['L_L_phi'][iteration][i] >= 0.5:
-                S_p_micro = S_p_micro + (1-dict_pp['L_L_phi'][iteration][i])
+                S_p_micro = S_p_micro + 1
         # xi
         S_psi = np.sum(dict_pp['L_L_psi'][iteration])
 
@@ -326,32 +339,24 @@ def Compute_macro_micro_porosity(dict_pp, dict_sample, dict_user):
             M_psi_0 = S_psi/len(dict_pp['L_L_psi'][iteration])
 
         # Compute mean
-        L_p_macro.append(S_p_macro/len(dict_pp['L_L_psi'][iteration]))
-        L_p_micro.append(S_p_micro/len(dict_pp['L_L_psi'][iteration]))
+        L_p_macro.append(1-S_p_macro/len(dict_pp['L_L_psi'][iteration]))
+        L_p_micro.append(1-S_p_micro/len(dict_pp['L_L_psi'][iteration]))
         L_xi.append(1-(S_psi/len(dict_pp['L_L_psi'][iteration]))/M_psi_0)
 
     # plot results
-    fig, ((ax1,ax2),(ax3,ax4)) = plt.subplots(2,2,figsize=(16,9))
+    fig, ((ax1, ax2)) = plt.subplots(1,2,figsize=(16,9))
     # psi
-    ax1.plot(L_p_macro)
-    ax1.set_xlabel('Iteration (-)')
+    ax1.plot(L_xi, L_p_macro)
+    ax1.set_xlabel(r'$\xi$ (-)')
     ax1.set_ylabel(r'$p_{macro}$')
-
-    ax3.plot(L_xi, L_p_macro)
-    ax3.set_xlabel(r'$\xi$ (-)')
-    ax3.set_ylabel(r'$p_{macro}$')
     # phi
-    ax2.plot(L_p_micro)
-    ax2.set_xlabel('Iteration (-)')
+    ax2.plot(L_xi, L_p_micro)
+    ax2.set_xlabel(r'$\xi$ (-)')
     ax2.set_ylabel(r'$p_{micro}$')
 
-    ax4.plot(L_xi, L_p_micro)
-    ax4.set_xlabel(r'$\xi$ (-)')
-    ax4.set_ylabel(r'$p_{micro}$')
-
     plt.suptitle('Porosity')
-    ax1.set_title('Macro = Gel + Source')
-    ax2.set_title('Micro = Gel')
+    ax1.set_title('Macro = 1 - (Gel+Source)')
+    ax2.set_title('Micro = 1 - Gel')
 
     fig.savefig('png/tracker_p_macro_micro.png')
     plt.close(fig)
@@ -373,6 +378,7 @@ def Compute_SpecificSurf(dict_pp, dict_sample, dict_user):
 
     # iterate on the time
     for iteration in range(len(dict_pp['L_L_phi'])):
+        print(iteration+1,'/',len(dict_pp['L_L_phi']))
 
         # Read mesh
         L_x = dict_sample['L_x']
@@ -388,7 +394,10 @@ def Compute_SpecificSurf(dict_pp, dict_sample, dict_user):
             i_x = list(find_ix).index(min(find_ix))
             i_y = list(find_iy).index(min(find_iy))
             # rebuild
-            M_phi[-1-i_y,i_x] = dict_pp['L_L_phi'][iteration][i]
+            if dict_pp['L_L_phi'][iteration][i] > 0.5 :
+                M_phi[-1-i_y,i_x] = 1
+            else :
+                M_phi[-1-i_y,i_x] = 0
 
         # Compute the gradient
         grad_x_cst, grad_y_cst = np.gradient(M_phi,L_x[1]-L_x[0],L_y[1]-L_y[0])
@@ -405,16 +414,10 @@ def Compute_SpecificSurf(dict_pp, dict_sample, dict_user):
         L_xi.append(1-(S_psi/len(dict_pp['L_L_psi'][iteration]))/M_psi_0)
 
     # plot results
-    fig, (ax1,ax2) = plt.subplots(1,2,figsize=(16,9))
-
-    ax1.plot(L_spec_surf)
-    ax1.set_xlabel('Iteration (-)')
-    ax1.set_ylabel('Equivalent to Specific Surface (m-1)')
-
-    ax2.plot(L_xi, L_spec_surf)
-    ax2.set_xlabel(r'$\xi$ (-)')
-    ax2.set_ylabel(r'Equivalent to Specific Surface (m-1)')
-
+    fig, (ax1) = plt.subplots(1,1,figsize=(16,9))
+    ax1.plot(L_xi, L_spec_surf)
+    ax1.set_xlabel(r'$\xi$ (-)')
+    ax1.set_ylabel(r'Specific Surface ($\mu$m-1)')
     fig.savefig('png/tracker_specific_surf.png')
     plt.close(fig)
 
@@ -444,6 +447,7 @@ def Compute_DegreeHydration(dict_pp, dict_sample, dict_user):
     ax1.plot(L_xi)
     ax1.set_ylabel(r'$\xi$ (-)')
     ax1.set_xlabel('Iterations (-)')
+    plt.suptitle('Iterations are different than times !')
     fig.savefig('png/tracker_degree_hydration.png')
     plt.close(fig)
 
@@ -518,10 +522,10 @@ def Compute_ChordLenght_Density_Func(dict_pp, dict_sample, dict_user):
 
         # definition of the probability density function
         l_min = dict_user['d_mesh']*5
-        l_max = dict_user['d_mesh']*100
+        l_max = dict_user['d_mesh']*500
         n_l_log = 20
         n_try = 1000
-        n_nodes_line = 10
+        n_nodes_line = 100
 
         # generate the list of chord length (in base 10)
         l_min_log = math.log(l_min,10)
@@ -552,8 +556,9 @@ def Compute_ChordLenght_Density_Func(dict_pp, dict_sample, dict_user):
                 # compute the final point
                 x_end = x_origin + l*math.cos(angle)
                 y_end = y_origin + l*math.sin(angle)
-                # check pore
+                # check pore and solid
                 in_pore = True
+                in_solid = True
                 # discretization of the line to verify intersection
                 for i_node_line in range(n_nodes_line):
                     x_node = x_origin + i_node_line/(n_nodes_line-1)*(x_end-x_origin)
@@ -566,22 +571,10 @@ def Compute_ChordLenght_Density_Func(dict_pp, dict_sample, dict_user):
                     # check conditions
                     if M_phi[-1-i_y, i_x] == 1 or M_psi[-1-i_y, i_x] == 1:
                         in_pore = False
+                    else:
+                        in_solid = False
                 if in_pore :
                     n_in_pore = n_in_pore + 1
-                # check solid
-                in_solid = True
-                # discretization of the line to verify intersection
-                for i_node_line in range(n_nodes_line):
-                    x_node = x_origin + i_node_line/(n_nodes_line-1)*(x_end-x_origin)
-                    y_node = y_origin + i_node_line/(n_nodes_line-1)*(y_end-y_origin)
-                    # look for the nearest node in the mesh
-                    find_ix = abs(np.array(dict_sample['L_x'])-x_node)
-                    find_iy = abs(np.array(dict_sample['L_y'])-y_node)
-                    i_x = list(find_ix).index(min(find_ix))
-                    i_y = list(find_iy).index(min(find_iy))
-                    # check conditions
-                    if M_phi[-1-i_y, i_x] == 0 or M_psi[-1-i_y, i_x] == 0:
-                        in_solid = False
                 if in_solid :
                     n_in_solid = n_in_solid + 1
             # compute the probability
@@ -623,16 +616,16 @@ def Compute_ChordLenght_Density_Func(dict_pp, dict_sample, dict_user):
         ax1.plot(L_l, L_cldf_pore)
         ax1.set_xscale('log')
         ax1.set_ylabel('Chord-length density function (-)')
-        ax1.set_xlabel('Length (-)')
+        ax1.set_xlabel(r'Length ($\mu$m)')
         ax1.set_title('Pore')
 
         ax2.plot(L_l, L_cldf_solid)
         ax2.set_xscale('log')
         ax2.set_ylabel('Chord-length density function (-)')
-        ax2.set_xlabel('Length (-)')
+        ax2.set_xlabel(r'Length ($\mu$m)')
         ax2.set_title('Solid')
 
-        plt.suptitle(L_xi[-1])
+        plt.suptitle('Degree of hydration: '+str(round(L_xi[-1],2)))
         fig.savefig('png/cldf/'+str(iteration)+'.png')
         plt.close(fig)
 
@@ -642,16 +635,16 @@ def Compute_ChordLenght_Density_Func(dict_pp, dict_sample, dict_user):
         ax1.plot(L_l, L_cldf_pore_n)
         ax1.set_xscale('log')
         ax1.set_ylabel('Normalized chord-length density function (-)')
-        ax1.set_xlabel('Length (-)')
+        ax1.set_xlabel(r'Length ($\mu$m)')
         ax1.set_title('Pore')
 
         ax2.plot(L_l, L_cldf_solid_n)
         ax2.set_xscale('log')
         ax2.set_ylabel('Normalized chord-length density function (-)')
-        ax2.set_xlabel('Length (-)')
+        ax2.set_xlabel(r'Length ($\mu$m)')
         ax2.set_title('Solid')
 
-        plt.suptitle(L_xi[-1])
+        plt.suptitle('Degree of hydration: '+str(round(L_xi[-1],2)))
         fig.savefig('png/cldf_n/'+str(iteration)+'.png')
         plt.close(fig)
 
@@ -659,19 +652,19 @@ def Compute_ChordLenght_Density_Func(dict_pp, dict_sample, dict_user):
     fig, (ax1, ax2) = plt.subplots(1,2,figsize=(16,9))
 
     for i in range(len(L_L_cldf_pore)):
-        ax1.plot(L_l, L_L_cldf_pore[i], label=L_xi_comp[i])
+        ax1.plot(L_l, L_L_cldf_pore[i], label=round(L_xi_comp[i],2))
     ax1.legend()
     ax1.set_xscale('log')
     ax1.set_ylabel('Chord-length density function (-)')
-    ax1.set_xlabel('Length (-)')
+    ax1.set_xlabel(r'Length ($\mu$m)')
     ax1.set_title('Pore')
 
     for i in range(len(L_L_cldf_solid)):
-        ax2.plot(L_l, L_L_cldf_solid[i], label=L_xi_comp[i])
+        ax2.plot(L_l, L_L_cldf_solid[i], label=round(L_xi_comp[i],2))
     ax2.legend()
     ax2.set_xscale('log')
     ax2.set_ylabel('Chord-length density function (-)')
-    ax2.set_xlabel('Length (-)')
+    ax2.set_xlabel(r'Length ($\mu$m)')
     ax2.set_title('Solid')
 
     fig.savefig('png/cldf/Comparison.png')
@@ -680,19 +673,19 @@ def Compute_ChordLenght_Density_Func(dict_pp, dict_sample, dict_user):
     fig, (ax1, ax2) = plt.subplots(1,2,figsize=(16,9))
 
     for i in range(len(L_L_cldf_pore_n)):
-        ax1.plot(L_l, L_L_cldf_pore_n[i], label=L_xi_comp[i])
+        ax1.plot(L_l, L_L_cldf_pore_n[i], label=round(L_xi_comp[i],2))
     ax1.legend()
     ax1.set_xscale('log')
     ax1.set_ylabel('Normalized chord-length density function (-)')
-    ax1.set_xlabel('Length (-)')
+    ax1.set_xlabel(r'Length ($\mu$m)')
     ax1.set_title('Pore')
 
     for i in range(len(L_L_cldf_solid_n)):
-        ax2.plot(L_l, L_L_cldf_solid_n[i], label=L_xi_comp[i])
+        ax2.plot(L_l, L_L_cldf_solid_n[i], label=round(L_xi_comp[i],2))
     ax2.legend()
     ax2.set_xscale('log')
     ax2.set_ylabel('Normalized chord-length density function (-)')
-    ax2.set_xlabel('Length (-)')
+    ax2.set_xlabel(r'Length ($\mu$m)')
     ax2.set_title('Solid')
 
     fig.savefig('png/cldf_n/Comparison.png')
@@ -758,7 +751,7 @@ def Compute_PoreSize_Func(dict_pp, dict_sample, dict_user):
         L_xi.append(1-(S_psi/len(dict_pp['L_L_psi'][iteration]))/M_psi_0)
 
         # compute the signed distance function
-        sd = skfmm.distance(M_phi, dx = L_x[1]-L_x[0])
+        sd = skfmm.distance(M_phi, dx = np.array([L_x[1]-L_x[0],L_y[1]-L_y[0]]))
 
         # work on the signed distance
         mean_size_pore = 0
@@ -783,7 +776,7 @@ def Compute_PoreSize_Func(dict_pp, dict_sample, dict_user):
         mean_size_pore = mean_size_pore/n_mean_size_pore
         for i in range(len(L_psf)):
             L_psf[i] = L_psf[i]/n_mean_size_pore
-        L_mean_pore.append(mean_size_pore)
+        L_mean_pore.append(abs(mean_size_pore))
         # compute the integral
         Int = 0
         for i in range(len(L_psf)-1):
@@ -792,6 +785,9 @@ def Compute_PoreSize_Func(dict_pp, dict_sample, dict_user):
         L_psf_n = []
         for i in range(len(L_psf)):
             L_psf_n.append(L_psf[i]/Int)
+
+        # adapt list pore size
+        L_pore_size = - L_pore_size
 
         # save for comparison
         if iteration >= f_pp*i_pp:
@@ -806,15 +802,15 @@ def Compute_PoreSize_Func(dict_pp, dict_sample, dict_user):
 
         ax1.plot(L_pore_size[1:], L_psf)
         ax1.set_ylabel('Pore-size function (-)')
-        ax1.set_xlabel('Pore size (-)')
+        ax1.set_xlabel(r'Pore size ($\mu$m)')
         ax1.set_title('Not normalized')
 
         ax2.plot(L_pore_size[1:], L_psf_n)
         ax2.set_ylabel('Normalized pore-size function (-)')
-        ax2.set_xlabel('Pore size (-)')
+        ax2.set_xlabel(r'Pore size ($\mu$m)')
         ax2.set_title('Normalized')
 
-        plt.suptitle(L_xi[-1])
+        plt.suptitle('Degree of hydration: '+str(round(L_xi[-1],2)))
         fig.savefig('png/psf/'+str(iteration)+'.png')
         plt.close(fig)
 
@@ -822,17 +818,17 @@ def Compute_PoreSize_Func(dict_pp, dict_sample, dict_user):
     fig, (ax1, ax2) = plt.subplots(1,2,figsize=(16,9))
 
     for i in range(len(L_L_psf)):
-        ax1.plot(L_L_pore_size[i], L_L_psf[i], label=L_xi_comp[i])
+        ax1.plot(L_L_pore_size[i][1:], L_L_psf[i], label=round(L_xi_comp[i],2))
     ax1.legend()
     ax1.set_ylabel('Pore-size function (-)')
-    ax1.set_xlabel('Pore size (-)')
+    ax1.set_xlabel(r'Pore size ($\mu$m)')
     ax1.set_title('Not normalized')
 
-    for i in range(len(L_L_cldf_solid)):
-        ax2.plot(L_L_pore_size[i], L_L_psf_n[i], label=L_xi_comp[i])
+    for i in range(len(L_L_psf)):
+        ax2.plot(L_L_pore_size[i][1:], L_L_psf_n[i], label=round(L_xi_comp[i],2))
     ax2.legend()
     ax2.set_ylabel('Pore-size function (-)')
-    ax2.set_xlabel('Pore size (-)')
+    ax2.set_xlabel(r'Pore size ($\mu$m)')
     ax2.set_title('Normalized')
 
     fig.savefig('png/psf/Comparison.png')
@@ -842,7 +838,7 @@ def Compute_PoreSize_Func(dict_pp, dict_sample, dict_user):
     fig, (ax1) = plt.subplots(1,1,figsize=(16,9))
 
     ax1.plot(L_xi, L_mean_pore)
-    ax1.set_ylabel('Mean pore size (-)')
+    ax1.set_ylabel(r'Mean pore size ($\mu$m)')
     ax1.set_xlabel(r'$\xi$ (-)')
 
     fig.savefig('png/psf/MeanPoreSize.png')
