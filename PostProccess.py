@@ -201,7 +201,7 @@ def Compute_Sphi_Spsi_Sc(dict_pp, dict_sample, dict_user):
         L_S_phi.append(np.sum(dict_pp['L_L_phi'][iteration]))
         L_S_psi.append(np.sum(dict_pp['L_L_psi'][iteration]))
         L_S_c.append(np.sum(dict_pp['L_L_c'][iteration]))
-        L_S_mass.append(L_S_c[-1] + dict_user['alpha_phi']*L_S_phi[-1] + dict_user['alpha_psi']*L_S_psi[-1])
+        L_S_mass.append(L_S_c[-1] + dict_user['a_phi']*L_S_phi[-1] + dict_user['a_psi']*L_S_psi[-1])
 
     # save data
     dict_pp['L_S_phi'] = L_S_phi
