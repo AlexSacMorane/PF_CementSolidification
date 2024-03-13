@@ -31,7 +31,7 @@ def Adapt_I(dict_sample, dict_user):
         if j == 10:
             line = line[:-1] + ' ' + str(max(dict_sample['L_y'])) + '\n'
         if j == 32:
-            if dict_user['IC_mode'] == 'Spheres' or dict_user['IC_mode'] == 'Powder':
+            if dict_user['IC_mode'] == 'Spheres' or dict_user['IC_mode'] == 'Spheres_Seed' or dict_user['IC_mode'] == 'Powder':
                 line = line[:-1] + 'psi_txt\n'
             if dict_user['IC_mode'] == 'Petersen':
                 line = line[:-1] + 'psi_png\n'
@@ -51,7 +51,7 @@ def Adapt_I(dict_sample, dict_user):
         if j == 155:
             line = line[:-1] + " '" + str(dict_user['k_c_0']) + ' ' + str(dict_user['k_c_exp']) + "'\n"
         if j == 161:
-            if dict_user['IC_mode'] == 'Spheres' or dict_user['IC_mode'] == 'Powder':
+            if dict_user['IC_mode'] == 'Spheres' or dict_user['IC_mode'] == 'Spheres_Seed' or dict_user['IC_mode'] == 'Powder':
                 line = line[:-1] + "'phi_txt psi_txt c_txt'\n"
             if dict_user['IC_mode'] == 'Petersen':
                 line = line[:-1] + "'phi_txt psi_png c_txt'\n"

@@ -22,8 +22,8 @@ from WriteI import *
 dim_domain = 320 # size of the study domain (µm)
 
 # Definition of the IC
-# Available : Petersen, Spheres, Powder
-IC_mode = 'Powder'
+# Available : Petersen, Spheres, Spheres_Seed, Powder
+IC_mode = 'Spheres_Seed'
 
 if IC_mode=='Spheres' :
     # Description of the grain (size distribution)
@@ -35,6 +35,20 @@ if IC_mode=='Spheres' :
     factor_int = 10 # additional distance (considering interface overlapping)
     n_try = 50 # maximum tries to determine a compatible configuration
     #n_steps = 15 # number of step increasing grains, use for no control IC
+
+if IC_mode=='Spheres_Seed' :
+    # Description of the grain (size distribution)
+    R = 15 # size of the grain of cement (µm)
+    R_var = 1 # variance of the size of the grao, pf cement
+    w_g_target = 0.5 # mass ratio water/cement targetted
+    rho_H20 = 1000 # density water (kg.m-3)
+    rho_g = 3200 # density cement (kg.m-3)
+    factor_int = 10 # additional distance (considering interface overlapping)
+    n_try = 50 # maximum tries to determine a compatible configuration
+    p_layer = 1e-3 # probability to a node at the layer of the grain to be a CSH seed
+    p_pore = 1e-5 # probability to a node in the pore space to be a CSH seed
+    n_neighbor = 5 # number of node to consider for layer definition
+    struc_element = np.ones((7,7)) # structure element for dilation operation
 
 if IC_mode=='Powder':
     # Description of the powder
@@ -52,13 +66,12 @@ d_mesh = dim_domain/n_mesh # size of the mesh element
 # Description of the phase field variables
 Energy_barrier = 1 # the energy barrier value used for free energies description
 kappa = 59.5*Energy_barrier*d_mesh*d_mesh # gradient coefficient for free energies phi/psi
-Mobility = d_mesh/0.12 # kinetic of free energies evolution (phi/psi) (µm.s-1)
-L = 0.12*Mobility/d_mesh # Mobility value used for free energies (phi/psi) (s-1)
+L = 1 # Mobility value used for free energies (phi/psi) (s-1)
 a_psi = 5 # conversion term (psi -> c)
 a_phi = a_psi/2.35 # conversion term (phi -> c)
-chi_c_phi = 10*d_mesh*Energy_barrier # coefficient used to tilt the free energies phi (dependent on the c value)
-chi_c_psi = 5*d_mesh*Energy_barrier # coefficient used to tilt the free energies psi (dependent on the c value)
-tilt_phi_phi0 = 0 # the phase value of the minima for the phi tilt function
+chi_c_phi = 20*Energy_barrier # coefficient used to tilt the free energies phi (dependent on the c value)
+chi_c_psi =  5*Energy_barrier # coefficient used to tilt the free energies psi (dependent on the c value)
+tilt_phi_phi0 = -0.1 # the phase value of the minima for the phi tilt function
 A_tilt_phi = 2/(-tilt_phi_phi0+1)**3  # phi^3 coefficient
 B_tilt_phi = -3/2*A_tilt_phi*(tilt_phi_phi0+1) # phi^2 coefficient
 C_tilt_phi = 3*A_tilt_phi*tilt_phi_phi0 # phi coefficient
@@ -66,11 +79,11 @@ D_tilt_phi = A_tilt_phi/2*(1-3*tilt_phi_phi0) # constant
 
 # description of the solute diffusion
 k_c_0 = (L*dim_domain**2)/(2.3*10**5) # coefficient of solute diffusion (µm2.s-1)
-k_c_0 = 50000
+k_c_0 = 5000
 k_c_exp = 0 # decay of the solute diffusion because of the gel (in the exp term)
 
 # computing information
-n_proc = 20 # number of processor used
+n_proc = 6 # number of processor used
 
 # compute performances
 tic = time.perf_counter()
@@ -107,6 +120,18 @@ if IC_mode=='Spheres' :
     dict_user['factor_int'] = factor_int
     dict_user['n_try'] = n_try
     #dict_user['n_steps'] = n_steps, use for no control
+if IC_mode=='Spheres_Seed' :
+    dict_user['R'] = R
+    dict_user['R_var'] = R_var
+    dict_user['rho_g'] = rho_g
+    dict_user['rho_water'] = rho_H20
+    dict_user['w_g_target'] = w_g_target
+    dict_user['factor_int'] = factor_int
+    dict_user['n_try'] = n_try
+    dict_user['p_layer'] = p_layer
+    dict_user['p_pore'] = p_pore
+    dict_user['n_neighbor'] = n_neighbor
+    dict_user['struc_element'] = struc_element
 if IC_mode=='Powder' :
     dict_user['R'] = R
     dict_user['R_var'] = R_var
@@ -143,6 +168,9 @@ dict_sample = {}
 # Create initial configuration
 if dict_user['IC_mode']=='Spheres':
     Insert_Grains(dict_sample, dict_user)
+if dict_user['IC_mode']=='Spheres_Seed':
+    #Insert_Grains_Seed(dict_sample, dict_user)
+    Insert_Grains_noSeed(dict_sample, dict_user)
 if dict_user['IC_mode']=='Petersen':
     Create_Petersen(dict_sample, dict_user)
 if dict_user['IC_mode']=='Powder':
@@ -179,14 +207,16 @@ dict_pp = {
 # Sort .vtk files
 Sort_vtk(dict_pp, dict_user)
 
+raise ValueError('Stop')
+
 # Post proccess data
 print('\nPost processing')
 Read_data(dict_pp, dict_sample, dict_user)
 
-#Compute_DegreeHydration(dict_pp, dict_sample, dict_user)
-#Compute_Mphi_Mpsi_Mc(dict_pp, dict_sample, dict_user)
-#Compute_Sphi_Spsi_Sc(dict_pp, dict_sample, dict_user)
-#Compute_macro_micro_porosity(dict_pp, dict_sample, dict_user)
+Compute_DegreeHydration(dict_pp, dict_sample, dict_user)
+Compute_Mphi_Mpsi_Mc(dict_pp, dict_sample, dict_user)
+Compute_Sphi_Spsi_Sc(dict_pp, dict_sample, dict_user)
+Compute_macro_micro_porosity(dict_pp, dict_sample, dict_user)
 #Compute_SpecificSurf(dict_pp, dict_sample, dict_user)
 #Compute_ChordLenght_Density_Func(dict_pp, dict_sample, dict_user)
 #Compute_PoreSize_Func(dict_pp, dict_sample, dict_user)

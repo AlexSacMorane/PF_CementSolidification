@@ -208,7 +208,7 @@
 
   start_time = 0.0
   end_time = 5
-  num_steps = 999
+  num_steps = 200
 
   [./TimeStepper]
     type = SolutionTimeAdaptiveDT
