@@ -207,12 +207,12 @@
   nl_abs_tol = 1.0e-5
 
   start_time = 0.0
-  end_time = 5
-  num_steps = 200
+  end_time = 
+  num_steps = 
 
   [./TimeStepper]
     type = SolutionTimeAdaptiveDT
-    dt = 0.003
+    dt = 
   [../]
 []
 

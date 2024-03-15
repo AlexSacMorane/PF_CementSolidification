@@ -40,7 +40,6 @@ def Read_data(dict_pp, dict_sample, dict_user):
     # template of the files read
     template_file = 'vtk/PF_Cement_Solidification_other_'
     # Initialization
-    dict_pp['L_L_i_XYZ_not_used'] = None
     L_limits = []
     # data
     dict_pp['L_L_psi'] = []
@@ -153,6 +152,21 @@ def Read_data(dict_pp, dict_sample, dict_user):
                     L_L_i_XYZ_not_used.append(L_i_XYZ_not_used)
                     L_limits.append([x_min,x_max,y_min,y_max])
 
+                    # plot processors distribution
+                    fig, (ax1) = plt.subplots(1,1,figsize=(16,9))
+                    # parameters
+                    title_fontsize = 20
+                    for i_proc in range(len(L_limits)):
+                        limits = L_limits[i_proc]
+                        ax1.plot([limits[0],limits[1],limits[1],limits[0],limits[0]],[limits[2],limits[2],limits[3],limits[3],limits[2]], label='proc '+str(i_proc))
+                    ax1.legend()
+                    ax1.set_xlabel('X (m)')
+                    ax1.set_ylabel('Y (m)')
+                    ax1.set_title('Processor i has the priority on i+1',fontsize = title_fontsize)
+                    fig.suptitle('Processors ditribution',fontsize = 1.2*title_fontsize)
+                    fig.savefig('png/processors_distribution.png')
+                    plt.close(fig)
+
             # save data
             dict_pp['L_L_psi'].append(L_psi)
             dict_pp['L_L_phi'].append(L_phi)
@@ -164,21 +178,6 @@ def Read_data(dict_pp, dict_sample, dict_user):
                 dict_pp['L_XYZ'] = L_XYZ_used
 
             i_pp = i_pp + 1
-
-    # plot processors distribution
-    fig, (ax1) = plt.subplots(1,1,figsize=(16,9))
-    # parameters
-    title_fontsize = 20
-    for i_proc in range(len(L_limits)):
-        limits = L_limits[i_proc]
-        ax1.plot([limits[0],limits[1],limits[1],limits[0],limits[0]],[limits[2],limits[2],limits[3],limits[3],limits[2]], label='proc '+str(i_proc))
-    ax1.legend()
-    ax1.set_xlabel('X (m)')
-    ax1.set_ylabel('Y (m)')
-    ax1.set_title('Processor i has the priority on i+1',fontsize = title_fontsize)
-    fig.suptitle('Processors ditribution',fontsize = 1.2*title_fontsize)
-    fig.savefig('png/processors_distribution.png')
-    plt.close(fig)
 
 #-------------------------------------------------------------------------------
 

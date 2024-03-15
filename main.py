@@ -13,6 +13,7 @@ from CreateIC import *
 from PostProccess import  *
 from SortFiles import *
 from WriteI import *
+from MeshDatabase import *
 
 #-------------------------------------------------------------------------------
 # User
@@ -83,7 +84,19 @@ k_c_0 = 5000
 k_c_exp = 0 # decay of the solute diffusion because of the gel (in the exp term)
 
 # computing information
-n_proc = 6 # number of processor used
+n_proc = 5 # number of processor used
+
+# PF time parameters
+dt_PF = 0.003 # time step
+n_ite_max = 200 # maximum number of iteration
+
+# reduce memory usage
+reduce_memory_usage = True
+# if True, number maximum of vtks
+n_vtk_max = 50
+
+# Post proccessing
+PostProccess = False
 
 # compute performances
 tic = time.perf_counter()
@@ -108,7 +121,12 @@ dict_user = {
 'k_c_0': k_c_0,
 'k_c_exp': k_c_exp,
 'n_proc': n_proc,
-'tic': tic
+'dt_PF': dt_PF,
+'n_ite_max': n_ite_max,
+'tic': tic,
+'reduce_memory_usage': reduce_memory_usage,
+'n_vtk_max': n_vtk_max,
+'PostProccess': PostProccess
 }
 
 if IC_mode=='Spheres' :
@@ -138,6 +156,9 @@ if IC_mode=='Powder' :
     dict_user['rho_g'] = rho_g
     dict_user['rho_water'] = rho_H20
     dict_user['w_g_target'] = w_g_target
+
+if reduce_memory_usage:
+    dict_user['n_vtk_max'] = n_vtk_max
 
 #-------------------------------------------------------------------------------
 # Prepare simulation
@@ -169,8 +190,8 @@ dict_sample = {}
 if dict_user['IC_mode']=='Spheres':
     Insert_Grains(dict_sample, dict_user)
 if dict_user['IC_mode']=='Spheres_Seed':
-    #Insert_Grains_Seed(dict_sample, dict_user)
-    Insert_Grains_noSeed(dict_sample, dict_user)
+    Insert_Grains_Seed(dict_sample, dict_user)
+    #Insert_Grains_noSeed(dict_sample, dict_user)
 if dict_user['IC_mode']=='Petersen':
     Create_Petersen(dict_sample, dict_user)
 if dict_user['IC_mode']=='Powder':
@@ -186,6 +207,12 @@ os.system('mpiexec -n '+str(dict_user['n_proc'])+' ~/projects/moose/modules/phas
 os.rename('PF_Cement_Solidification.i','i/PF_Cement_Solidification.i')
 os.rename('PF_Cement_Solidification_out.e','e/PF_Cement_Solidification_out.e')
 
+# delete files
+if reduce_memory_usage:
+    shutil.rmtree('e')
+    shutil.rmtree('i')
+    shutil.rmtree('txt')
+
 # Save dicts
 pickle.dump(dict_user, open('dict/dict_user.dict','wb'))
 pickle.dump(dict_sample, open('dict/dict_sample.dict','wb'))
@@ -198,6 +225,8 @@ print('\nEnd of the simulation')
 
 # parameters for post proccess
 max_ite = 20
+if reduce_memory_usage:
+    max_ite = min(max_ite, n_vtk_max)
 
 # create empty dict
 dict_pp = {
@@ -205,21 +234,29 @@ dict_pp = {
 }
 
 # Sort .vtk files
-Sort_vtk(dict_pp, dict_user)
-
-raise ValueError('Stop')
+if reduce_memory_usage:
+    Sort_vtk_reduced(dict_pp, dict_user)
+else:
+    Sort_vtk(dict_pp, dict_user)
 
 # Post proccess data
-print('\nPost processing')
-Read_data(dict_pp, dict_sample, dict_user)
+if PostProccess:
+    print('\nPost processing')
+    # check in database
+    check_mesh_database(dict_user, dict_sample)
+    # read
+    Read_data(dict_pp, dict_sample, dict_user, dict_pp)
+    # Save database
+    save_mesh_database(dict_user, dict_sample, dict_pp)
 
-Compute_DegreeHydration(dict_pp, dict_sample, dict_user)
-Compute_Mphi_Mpsi_Mc(dict_pp, dict_sample, dict_user)
-Compute_Sphi_Spsi_Sc(dict_pp, dict_sample, dict_user)
-Compute_macro_micro_porosity(dict_pp, dict_sample, dict_user)
-#Compute_SpecificSurf(dict_pp, dict_sample, dict_user)
-#Compute_ChordLenght_Density_Func(dict_pp, dict_sample, dict_user)
-#Compute_PoreSize_Func(dict_pp, dict_sample, dict_user)
+    # work
+    #Compute_DegreeHydration(dict_pp, dict_sample, dict_user)
+    #Compute_Mphi_Mpsi_Mc(dict_pp, dict_sample, dict_user)
+    #Compute_Sphi_Spsi_Sc(dict_pp, dict_sample, dict_user)
+    #Compute_macro_micro_porosity(dict_pp, dict_sample, dict_user)
+    #Compute_SpecificSurf(dict_pp, dict_sample, dict_user)
+    #Compute_ChordLenght_Density_Func(dict_pp, dict_sample, dict_user)
+    #Compute_PoreSize_Func(dict_pp, dict_sample, dict_user)
 
 #-------------------------------------------------------------------------------
 # Close

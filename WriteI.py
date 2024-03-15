@@ -55,6 +55,12 @@ def Adapt_I(dict_sample, dict_user):
                 line = line[:-1] + "'phi_txt psi_txt c_txt'\n"
             if dict_user['IC_mode'] == 'Petersen':
                 line = line[:-1] + "'phi_txt psi_png c_txt'\n"
+        if j == 210:
+            line = line[:-1] + " " + str(2*dict_user['n_ite_max']*dict_user['dt_PF']) + "\n"
+        if j == 211:
+            line = line[:-1] + " " + str(dict_user['n_ite_max']) + "\n"
+        if j == 215:
+            line = line[:-1] + " " + str(dict_user['dt_PF']) + "\n"
         file_to_write.write(line)
     file_to_write.close()
 
