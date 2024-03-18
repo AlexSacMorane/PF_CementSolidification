@@ -826,15 +826,17 @@ def Insert_Grains_Seed(dict_sample, dict_user):
     for i_x in range(len(L_x)):
         for i_y in range(len(L_y)):
             # verify the node is not in a cement source
-            if M_psi[-1-i_y, i_x] == 0:
+            if M_psi[i_y, i_x] != 1:
                 # node in the layer of a grain
                 # a neighborhood of n_neighbor nodes is assumed
-                if np.sum(M_psi[max(0,-1-i_y-n_neighbor):min(len(L_y)-1,-1-i_y+n_neighbor+1), max(0,i_x-n_neighbor):min(len(L_x)-1,i_x+n_neighbor+1)]) > 0:
+                if np.sum(M_psi[max(0, i_y-n_neighbor):min(len(L_y), i_y+n_neighbor+1),\
+                                max(0, i_x-n_neighbor):min(len(L_x), i_x+n_neighbor+1)]) > 0:   
                     if random.random() < dict_user['p_layer']:
-                        M_phi[-1-i_y, i_x] = 1
+                        M_phi[i_y, i_x] = 1
                 # node in the pore space
-                if random.random() < dict_user['p_pore']:
-                    M_phi[-1-i_y, i_x] = 1
+                else:
+                    if random.random() < dict_user['p_pore']:
+                        M_phi[i_y, i_x] = 1
     # binary dilation on the phi map
     M_phi = ndimage.binary_dilation(M_phi, structure=dict_user['struc_element']).astype(M_phi.dtype)
     # characterization of the map
@@ -851,6 +853,8 @@ def Insert_Grains_Seed(dict_sample, dict_user):
     fig.tight_layout()
     fig.savefig('png/IC_one_map.png')
     plt.close(fig)
+
+    raise ValueError('Stop')
 
     # adapt maps
     M_psi = M_psi - 0.5
