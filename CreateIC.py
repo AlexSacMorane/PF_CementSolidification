@@ -853,9 +853,7 @@ def Insert_Grains_Seed(dict_sample, dict_user):
     fig.tight_layout()
     fig.savefig('png/IC_one_map.png')
     plt.close(fig)
-
-    raise ValueError('Stop')
-
+    
     # adapt maps
     M_psi = M_psi - 0.5
     M_phi = M_phi - 0.5
