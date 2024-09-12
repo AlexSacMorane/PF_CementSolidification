@@ -14,42 +14,43 @@ from PostProccess import  *
 from SortFiles import *
 from WriteI import *
 from MeshDatabase import *
+from Load_microstructures import *
 
 #-------------------------------------------------------------------------------
 # User
 #------------------------------------------------------------------------------
 
 # Description of the domain (total)
-dim_domain = 320 # size of the study domain (µm)
+dim_domain = 30 # size of the study domain (µm)
+
+# Description of the mesh
+n_mesh = 150 # number of element in one direction of the mesh
+             # the number of nodes is n_mesh+1
+d_mesh = dim_domain/n_mesh # size of the mesh element
 
 # Definition of the IC
-# Available : Petersen, Spheres, Spheres_Seed, Powder
-IC_mode = 'Spheres_Seed'
+# Available : OneGrain_Seed, Spheres_Seed, Powder
+IC_mode = 'OneGrain_Seed'
 
-if IC_mode=='Spheres' :
-    # Description of the grain (size distribution)
-    R = 15 # size of the grain of cement (µm)
-    R_var = 1 # variance of the size of the grao, pf cement
-    w_g_target = 0.5 # mass ratio water/cement targetted
+if IC_mode=='OneGrain_Seed':
+    R = 0.74*dim_domain/2 # size of the grain of cement (µm)
     rho_H20 = 1000 # density water (kg.m-3)
     rho_g = 3200 # density cement (kg.m-3)
-    factor_int = 10 # additional distance (considering interface overlapping)
-    n_try = 50 # maximum tries to determine a compatible configuration
-    #n_steps = 15 # number of step increasing grains, use for no control IC
-
+    n_seed = 4 # number of seed
+    
 if IC_mode=='Spheres_Seed' :
     # Description of the grain (size distribution)
-    R = 15 # size of the grain of cement (µm)
-    R_var = 1 # variance of the size of the grao, pf cement
-    w_g_target = 0.5 # mass ratio water/cement targetted
+    R = 10 # size of the grain of cement (µm)
+    R_var = 0.5 # variance of the size of the grain, pf cement
+    w_g_target = 0.3 # mass ratio water/cement targetted
     rho_H20 = 1000 # density water (kg.m-3)
     rho_g = 3200 # density cement (kg.m-3)
-    factor_int = 10 # additional distance (considering interface overlapping)
+    factor_int = 1 # additional distance (considering interface overlapping)
     n_try = 50 # maximum tries to determine a compatible configuration
     p_layer = 1e-3 # probability to a node at the layer of the grain to be a CSH seed
-    p_pore = 1e-5 # probability to a node in the pore space to be a CSH seed
-    n_neighbor = 5 # number of node to consider for layer definition
-    struc_element = np.ones((7,7)) # structure element for dilation operation
+    p_pore = 1e-4 # probability to a node in the pore space to be a CSH seed
+    n_neighbor = 8 # number of node to consider for layer definition
+    struc_element = np.ones((6,6)) # structure element for dilation operation
 
 if IC_mode=='Powder':
     # Description of the powder
@@ -59,61 +60,69 @@ if IC_mode=='Powder':
     rho_H20 = 1000 # density water (kg.m-3)
     rho_g = 3200 # density cement (kg.m-3)
 
-# Description of the mesh
-n_mesh = 600 # number of element in one direction of the mesh
-             # the number of nodes is n_mesh+1
-d_mesh = dim_domain/n_mesh # size of the mesh element
 
 # Description of the phase field variables
 Energy_barrier = 1 # the energy barrier value used for free energies description
-kappa = 59.5*Energy_barrier*d_mesh*d_mesh # gradient coefficient for free energies phi/psi
+n_int = 6 # number of mesh in the interface
+w_int = d_mesh*n_int # the interface thickness
+kappa = Energy_barrier*w_int*w_int/9.86 # gradient coefficient for free energies phi/psi
 L = 1 # Mobility value used for free energies (phi/psi) (s-1)
-a_psi = 5 # conversion term (psi -> c)
-a_phi = a_psi/2.35 # conversion term (phi -> c)
-chi_c_phi = 20*Energy_barrier # coefficient used to tilt the free energies phi (dependent on the c value)
-chi_c_psi =  5*Energy_barrier # coefficient used to tilt the free energies psi (dependent on the c value)
-tilt_phi_phi0 = -0.1 # the phase value of the minima for the phi tilt function
+    
+# Reaction C3S (psi) -> c
+C_eq_psi = 1 # equilibrium constant for the reaction
+a_psi = 4.688 # conversion term (psi -> c)
+chi_c_psi = 0.2*Energy_barrier # coefficient used to tilt the free energies psi (dependent on the c value)
+
+# Reaction c -> CSH (phi) 
+C_eq_phi = 0 # equilibrium constant for the reaction
+a_phi = 1 # conversion term (phi -> c)
+chi_c_phi = 0.2*Energy_barrier # coefficient used to tilt the free energies phi (dependent on the c value)
+# nucleation parameter
+tilt_phi_phi0 = 0 # the phase value of the minima for the phi tilt function
 A_tilt_phi = 2/(-tilt_phi_phi0+1)**3  # phi^3 coefficient
 B_tilt_phi = -3/2*A_tilt_phi*(tilt_phi_phi0+1) # phi^2 coefficient
 C_tilt_phi = 3*A_tilt_phi*tilt_phi_phi0 # phi coefficient
 D_tilt_phi = A_tilt_phi/2*(1-3*tilt_phi_phi0) # constant
 
 # description of the solute diffusion
-k_c_0 = (L*dim_domain**2)/(2.3*10**5) # coefficient of solute diffusion (µm2.s-1)
-k_c_0 = 5000
-k_c_exp = 0 # decay of the solute diffusion because of the gel (in the exp term)
+k_c_0 = 1 # coefficient of solute diffusion (µm2.s-1)
+k_c_exp = 4 # decay of the solute diffusion because of the gel (in the exp term)
 
 # computing information
-n_proc = 5 # number of processor used
+n_proc = 4 # number of processor used
+crit_res = 1e-2 # convergence criteria on residual
+reduce_memory_usage = True # reduce memory usage
+n_vtk_max = 50 # if True, number maximum of vtks
+PostProccess = False # Post proccessing
 
 # PF time parameters
-dt_PF = 0.003 # time step
-n_ite_max = 200 # maximum number of iteration
-
-# reduce memory usage
-reduce_memory_usage = True
-# if True, number maximum of vtks
-n_vtk_max = 50
-
-# Post proccessing
-PostProccess = False
+dt_PF = 0.6 # time step
+n_ite_max = 600 # maximum number of iteration
 
 # compute performances
 tic = time.perf_counter()
 
+#-------------------------------------------------------------------------------
 # create dict
+#------------------------------------------------------------------------------
+
 dict_user = {
-'IC_mode': IC_mode,
 'dim_domain': dim_domain,
 'n_mesh': n_mesh,
 'd_mesh': d_mesh,
+'IC_mode': IC_mode,
 'Energy_barrier': Energy_barrier,
+'n_int': n_int,
+'w_int': w_int,
 'kappa': kappa,
 'L': L,
-'a_phi': a_phi,
+'crit_res': crit_res,
+'C_eq_psi': C_eq_psi,
 'a_psi': a_psi,
-'chi_c_phi': chi_c_phi,
 'chi_c_psi': chi_c_psi,
+'C_eq_phi': C_eq_phi,
+'a_phi': a_phi, 
+'chi_c_phi': chi_c_phi,
 'A_tilt_phi': A_tilt_phi,
 'B_tilt_phi': B_tilt_phi,
 'C_tilt_phi': C_tilt_phi,
@@ -129,15 +138,12 @@ dict_user = {
 'PostProccess': PostProccess
 }
 
-if IC_mode=='Spheres' :
+if IC_mode=='OneGrain_Seed':
     dict_user['R'] = R
-    dict_user['R_var'] = R_var
     dict_user['rho_g'] = rho_g
     dict_user['rho_water'] = rho_H20
-    dict_user['w_g_target'] = w_g_target
-    dict_user['factor_int'] = factor_int
-    dict_user['n_try'] = n_try
-    #dict_user['n_steps'] = n_steps, use for no control
+    dict_user['n_seed'] = n_seed
+
 if IC_mode=='Spheres_Seed' :
     dict_user['R'] = R
     dict_user['R_var'] = R_var
@@ -178,24 +184,26 @@ Create_Folder('txt')
 Create_Folder('i')
 Create_Folder('e')
 Create_Folder('vtk')
+Create_Folder('csv')
 
 # create empty dict
 dict_sample = {}
 
 #-------------------------------------------------------------------------------
-# Main
+# IC
 #-------------------------------------------------------------------------------
 
 # Create initial configuration
-if dict_user['IC_mode']=='Spheres':
-    Insert_Grains(dict_sample, dict_user)
+if dict_user['IC_mode']=='OneGrain_Seed':
+    Insert_One_Grain_Seed(dict_sample, dict_user)
 if dict_user['IC_mode']=='Spheres_Seed':
     Insert_Grains_Seed(dict_sample, dict_user)
-    #Insert_Grains_noSeed(dict_sample, dict_user)
-if dict_user['IC_mode']=='Petersen':
-    Create_Petersen(dict_sample, dict_user)
 if dict_user['IC_mode']=='Powder':
     Insert_Powder(dict_sample, dict_user)
+
+#-------------------------------------------------------------------------------
+# Main
+#-------------------------------------------------------------------------------
 
 # Write .i
 Adapt_I(dict_sample, dict_user)
@@ -220,17 +228,141 @@ pickle.dump(dict_sample, open('dict/dict_sample.dict','wb'))
 print('\nEnd of the simulation')
 
 #-------------------------------------------------------------------------------
-# Post proccess
+# Post proccess (read csv)
+#-------------------------------------------------------------------------------
+print('\n')
+
+# read file
+f = open('PF_Cement_Solidification_csv.csv', "r")
+lines = f.readlines()
+f.close()
+# init data
+time_pp = []
+c_pp = []
+phi_pp = []
+psi_pp = []
+sum_mat_pp = [] 
+hyd_pp = []
+
+# iterate on lines
+for line in lines[1:]:
+    line = line.replace("\n", "")
+    data = line.split(',')
+    # read data
+    time_pp.append(float(data[0]))
+    c_pp.append(float(data[1]))
+    phi_pp.append(float(data[2]))
+    psi_pp.append(float(data[3]))
+    sum_mat_pp.append(float(data[4]))
+    hyd_pp.append(1-psi_pp[-1]/psi_pp[0])
+
+# plot time-mass (solute, CSH, C3S)
+fig, ax1 = plt.subplots(1,1,figsize=(16,9))
+ax1.plot(time_pp, c_pp, label='solute', linewidth=6)
+ax1.plot(time_pp, phi_pp, label='CSH', linewidth=6)
+ax1.plot(time_pp, psi_pp, label='C3S', linewidth=6)
+ax1.legend(fontsize=20)
+ax1.set_xlabel('time (s)', fontsize=25)
+ax1.set_ylabel('mean values (-)', fontsize=25)
+ax1.tick_params(axis='both', labelsize=20, width=3, length=3) 
+fig.tight_layout()
+fig.savefig('png/evol_time_mat_.png')    
+plt.close(fig)
+
+# plot time-total mass
+fig, ax1 = plt.subplots(1,1,figsize=(16,9))
+ax1.plot(time_pp, sum_mat_pp, linewidth=6)
+ax1.set_xlabel('time (s)', fontsize=25)
+ax1.set_ylabel('total mass (-)', fontsize=25)
+ax1.tick_params(axis='both', labelsize=20, width=3, length=3) 
+fig.tight_layout()
+fig.savefig('png/evol_time_mass_.png')    
+plt.close(fig)
+# output
+print('conservation of the mass:')
+print('mass min:', min(sum_mat_pp), '(delta ', int(100*(np.mean(sum_mat_pp)-min(sum_mat_pp))/np.mean(sum_mat_pp)),'% of mean value)')
+print('mass max:', max(sum_mat_pp), '(delta ', int(100*(max(sum_mat_pp)-np.mean(sum_mat_pp))/np.mean(sum_mat_pp)),'% of mean value)')
+
+# plot time-hydration
+fig, ax1 = plt.subplots(1,1,figsize=(16,9))
+ax1.plot(time_pp, hyd_pp, linewidth=6)
+ax1.set_xlabel('time (s)', fontsize=25)
+ax1.set_ylabel('hydration (-)', fontsize=25)
+ax1.tick_params(axis='both', labelsize=20, width=3, length=3) 
+fig.tight_layout()
+fig.savefig('png/evol_time_hyd_.png')    
+plt.close(fig)
+
+# move file
+os.rename('PF_Cement_Solidification_csv.csv','csv/PF_Cement_Solidification_csv.csv')
+
+#-------------------------------------------------------------------------------
+# Post proccess parameters
 #-------------------------------------------------------------------------------
 
 # parameters for post proccess
-max_ite = 20
+max_ite = 10
 if reduce_memory_usage:
     max_ite = min(max_ite, n_vtk_max)
 
+# Mechanical properties
+# water (elastic)
+YoungModulus_H2O = 1e7 # Pa
+Poisson_H2O = 0.3 # -
+# C3S (elastic)
+YoungModulus_C3S = 1e9 # Pa
+Poisson_C3S = 0.3 # -
+# CSH (visco-elastic)
+YoungModulus_CSH = 1e9 # Pa
+Poisson_CSH = 0.3 # -
+creep_viscosity = 1 # -
+
+# Description of the mesh
+n_mesh_pp = 100 # number of element in one direction of the mesh
+                # the number of nodes is n_mesh+1
+n_mesh_pp = min(n_mesh, n_mesh_pp)
+
+# computing information
+n_proc_pp = 4 # number of processor used
+crit_res_pp = 1e-5 # convergence criteria on residual
+
+# loading
+loading = 'pull' # pull or shear
+speed_load = 0.2*dict_user['dim_domain'] 
+
+# time parameters
+dt_pp = 0.1 # time step
+
+# trackers
+L_L_strain = []
+L_L_stress_xx = []
+L_L_stress_xy = []
+L_L_stress_yy = []
+
+#-------------------------------------------------------------------------------
+# Post proccess (read vtk)
+#-------------------------------------------------------------------------------
+
 # create empty dict
 dict_pp = {
-'max_ite': max_ite
+    'max_ite': max_ite,
+    'YoungModulus_H2O': YoungModulus_H2O,
+    'Poisson_H2O': Poisson_H2O,
+    'YoungModulus_C3S': YoungModulus_C3S,
+    'Poisson_C3S': Poisson_C3S,
+    'YoungModulus_CSH': YoungModulus_CSH,
+    'Poisson_CSH': Poisson_CSH,
+    'creep_viscosity': creep_viscosity,
+    'n_mesh_pp': n_mesh_pp,
+    'n_proc_pp': n_proc_pp,
+    'crit_res_pp': crit_res_pp,
+    'loading': loading,
+    'speed_load': speed_load,
+    'dt_pp': dt_pp,
+    'L_L_strain': L_L_strain,
+    'L_L_stress_xx': L_L_stress_xx,
+    'L_L_stress_xy': L_L_stress_xy,
+    'L_L_stress_yy': L_L_stress_yy
 }
 
 # Sort .vtk files
@@ -245,7 +377,7 @@ if PostProccess:
     # check in database
     check_mesh_database(dict_user, dict_sample)
     # read
-    Read_data(dict_pp, dict_sample, dict_user, dict_pp)
+    Read_data(dict_pp, dict_sample, dict_user)
     # Save database
     save_mesh_database(dict_user, dict_sample, dict_pp)
 
@@ -257,6 +389,7 @@ if PostProccess:
     #Compute_SpecificSurf(dict_pp, dict_sample, dict_user)
     #Compute_ChordLenght_Density_Func(dict_pp, dict_sample, dict_user)
     #Compute_PoreSize_Func(dict_pp, dict_sample, dict_user)
+
 
 #-------------------------------------------------------------------------------
 # Close

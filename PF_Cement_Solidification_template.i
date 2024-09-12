@@ -128,9 +128,9 @@
     block = 0
     property_name = g_phi
     coupled_variables = 'phi c'
-    constant_names = 'W x_c A B C D'
+    constant_names = 'W x_c c_eq A B C D '
     constant_expressions =
-    expression = 'W*16*(phi^2)*((1-phi)^2) + x_c*(c-0.5)*(A*phi^3+B*phi^2+C*phi+D)'
+    expression = 'W*(phi^2)*((1-phi)^2) + x_c*(c-c_eq)*(A*phi^3+B*phi^2+C*phi+D)'
     enable_jit = true
     derivative_order = 1
   [../]
@@ -140,9 +140,9 @@
     block = 0
     property_name = g_psi
     coupled_variables = 'psi c'
-    constant_names = 'W x_c'
+    constant_names = 'W x_c c_eq'
     constant_expressions =
-    expression = 'W*16*(psi^2)*((1-psi)^2) - x_c*(c-1)*(3*psi^2-2*psi^3)'
+    expression = 'W*(psi^2)*((1-psi)^2) - x_c*(c-c_eq)*(3*psi^2-2*psi^3)'
     enable_jit = true
     derivative_order = 1
   [../]
@@ -199,12 +199,12 @@
   solve_type = 'NEWTON'
 
   l_max_its = 20
-  l_tol = 1.0e-3
-  l_abs_tol = 1.0e-5
+  l_tol = 
+  l_abs_tol = 
 
   nl_max_its = 10
-  nl_rel_tol = 1.0e-3
-  nl_abs_tol = 1.0e-5
+  nl_rel_tol = 
+  nl_abs_tol = 
 
   start_time = 0.0
   end_time = 
@@ -216,10 +216,40 @@
   [../]
 []
 
+[Postprocessors]
+  [phi_pp]
+    type = ElementAverageValue
+    variable = phi
+  []
+  [psi_pp]
+    type = ElementAverageValue
+    variable = psi
+  []
+  [c_pp]
+    type = ElementAverageValue
+    variable = c
+  []
+  [sum_mat_pp]
+    type = LinearCombinationPostprocessor
+    pp_names = 'phi_pp psi_pp c_pp'
+    pp_coefs = 
+  []
+[]
+
 [Outputs]
   execute_on = 'initial timestep_end'
   exodus = true
   [./other]
     type = VTK
+  [../]
+  [console]
+    type = Console
+    execute_on = 'nonlinear'
+    all_variable_norms = true
+  []
+  [./csv]
+    type = CSV
+    execute_on = 'TIMESTEP_END'
+    show = 'phi_pp psi_pp c_pp sum_mat_pp'
   [../]
 []
