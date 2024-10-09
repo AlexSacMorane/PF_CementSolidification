@@ -31,10 +31,8 @@ def Adapt_I(dict_sample, dict_user):
         if j == 10:
             line = line[:-1] + ' ' + str(max(dict_sample['L_y'])) + '\n'
         if j == 32:
-            if dict_user['IC_mode'] == 'OneGrain_Seed' or dict_user['IC_mode'] == 'Spheres_Seed' or dict_user['IC_mode'] == 'Powder':
+            if dict_user['IC_mode'] == 'OneGrain_Seed' or dict_user['IC_mode'] == 'Spheres_Seed' or dict_user['IC_mode'] == 'Powder_Seed':
                 line = line[:-1] + 'psi_txt\n'
-            if dict_user['IC_mode'] == 'Petersen':
-                line = line[:-1] + 'psi_png\n'
         if j == 100:
             line = line[:-1] + ' ' + str(dict_user['a_phi']) + '\n'
         if j == 106:
@@ -51,10 +49,8 @@ def Adapt_I(dict_sample, dict_user):
         if j == 155:
             line = line[:-1] + " '" + str(dict_user['k_c_0']) + ' ' + str(dict_user['k_c_exp']) + "'\n"
         if j == 161:
-            if dict_user['IC_mode'] == 'OneGrain_Seed' or dict_user['IC_mode'] == 'Spheres_Seed' or dict_user['IC_mode'] == 'Powder':
+            if dict_user['IC_mode'] == 'OneGrain_Seed' or dict_user['IC_mode'] == 'Spheres_Seed' or dict_user['IC_mode'] == 'Powder_Seed':
                 line = line[:-1] + "'phi_txt psi_txt c_txt'\n"
-            if dict_user['IC_mode'] == 'Petersen':
-                line = line[:-1] + "'phi_txt psi_png c_txt'\n"
         if j == 202 or j == 203 or j == 206 or j == 207:
             line = line[:-1] + " " + str(dict_user['crit_res']) + "\n"
         if j == 210:

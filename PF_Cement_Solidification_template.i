@@ -127,10 +127,10 @@
     type = DerivativeParsedMaterial
     block = 0
     property_name = g_phi
-    coupled_variables = 'phi c'
+    coupled_variables = 'phi psi c'
     constant_names = 'W x_c c_eq A B C D '
     constant_expressions =
-    expression = 'W*(phi^2)*((1-phi)^2) + x_c*(c-c_eq)*(A*phi^3+B*phi^2+C*phi+D)'
+    expression = 'W*(phi^2)*((1-phi)^2) + x_c*(c-c_eq)*(A*phi^3+B*phi^2+C*phi+D)*(1-(psi^2)*((1-psi)^2))'
     enable_jit = true
     derivative_order = 1
   [../]

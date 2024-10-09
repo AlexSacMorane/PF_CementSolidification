@@ -20,16 +20,16 @@ def main_load_microstructure(dict_user, dict_pp):
         shutil.rmtree('png/microstructure')
     os.mkdir('png/microstructure')
 
-    # iteration on the microstructures
-    for iteration in range(len(dict_pp['L_L_psi'])): 
-        # generate the png used for the domains definitions
-        generate_png_microstructure(dict_pp, dict_pp['L_L_psi'][iteration], dict_pp['L_L_phi'][iteration], dict_pp['L_XYZ'], iteration, dict_user)
-        # write input file .i from a template  
-        write_i_load_microstructure(dict_user, dict_pp)
-        # run simulation 
-        call_moose_load_microstructure(dict_pp)
-        # read csv data
-        read_plot_csv_load_microstructure(dict_pp, dict_user, dict_pp['L_L_psi'][iteration], dict_pp['L_L_phi'][iteration])
+    # load only the last microstructure
+    iteration = len(dict_pp['L_L_psi'])-1 
+    # generate the png used for the domains definitions
+    generate_png_microstructure(dict_pp, dict_pp['L_L_psi'][iteration], dict_pp['L_L_phi'][iteration], dict_pp['L_XYZ'], iteration, dict_user)
+    # write input file .i from a template  
+    write_i_load_microstructure(dict_user, dict_pp)
+    # run simulation 
+    call_moose_load_microstructure(dict_pp)
+    # read csv data
+    read_plot_csv_load_microstructure(dict_pp, dict_user, dict_pp['L_L_psi'][iteration], dict_pp['L_L_phi'][iteration])
     # plot result
     plot_strain_stress_evolution(dict_pp)
     
@@ -76,9 +76,9 @@ def generate_png_microstructure(dict_pp, L_psi, L_phi, L_XYZ, iteration, dict_us
         # iterate on y
         for i_y_png in range(dict_pp['n_mesh_pp']):
             # find coordinate y of mesh_pp in mesh
-            find_iy = abs(np.array(L_y)-L_x_png[i_y_png])
+            find_iy = abs(np.array(L_y)-L_y_png[i_y_png])
             i_y_m = list(find_iy).index(min(find_iy))
-            find_iy = abs(np.array(L_y)-L_x_png[i_y_png+1])
+            find_iy = abs(np.array(L_y)-L_y_png[i_y_png+1])
             i_y_p = list(find_iy).index(min(find_iy))
 
             # compute mean value of phi and psi
@@ -152,15 +152,40 @@ def write_i_load_microstructure(dict_user, dict_pp):
             line = line[:-1] + ' ' + str(dict_pp['YoungModulus_C3S']) + '\n'
         if j == 86:
             line = line[:-1] + ' ' + str(dict_pp['Poisson_C3S']) + '\n'
-        if j == 96 or j == 98:
-            line = line[:-1] + ' ' + str(dict_pp['YoungModulus_CSH']) + '\n'
-        if j == 97:
-            line = line[:-1] + ' ' + str(dict_pp['creep_viscosity']) + '\n'
-        if j == 99:
-            line = line[:-1] + ' ' + str(dict_pp['Poisson_CSH']) + '\n'
-        if j == 128 or j == 130 or j == 131:
+        if j == 94:
+            if dict_user['CSH_type'] == 'elastic':
+                line = '''[./CSH_elastic]
+                    type = ComputeIsotropicElasticityTensor
+                    youngs_modulus = ''' + str(dict_pp['YoungModulus_CSH']) +'''
+                    poissons_ratio = ''' + str(dict_pp['Poisson_CSH']) +'''
+                    block = 2
+                [../]
+                [./stress_elastic_CSH]
+                    type = ComputeLinearElasticStress
+                    block = 2
+                [../]\n'''            
+            elif dict_user['CSH_type'] == 'visco-elastic':
+                line = '''[./CSH_viscoelastic]
+                    \ttype = GeneralizedMaxwellModel
+                    \tcreep_modulus = ''' + str(dict_pp['YoungModulus_CSH']) +'''
+                    \tcreep_viscosity = ''' + str(dict_pp['creep_viscosity']) +'''
+                    \tyoung_modulus = ''' + str(dict_pp['YoungModulus_CSH']) +'''
+                    \tpoisson_ratio = ''' + str(dict_pp['Poisson_CSH']) +'''
+                    \tblock = 2
+                [../]
+                [./stress_viscoelastic]
+                    \ttype = ComputeLinearViscoelasticStress
+                    \tblock = 2
+                [../]\n'''  
+        if j == 98 and dict_user['CSH_type'] == 'visco-elastic':
+            line = '''[./update]
+                \ttype = LinearViscoelasticityManager
+                \tviscoelastic_model = CSH_viscoelastic
+                \tblock = 2
+                [../]\n'''
+        if j == 112 or j == 114 or j == 115:
             line = line[:-1] + ' ' + str(dict_pp['crit_res_pp']) + '\n'        
-        if j == 137:
+        if j == 121:
             line = line[:-1] + ' ' + str(dict_pp['dt_pp']) + '\n'
         file_to_write.write(line)
     file_to_write.close()
