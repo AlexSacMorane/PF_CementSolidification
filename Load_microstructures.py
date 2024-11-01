@@ -3,9 +3,12 @@
 #-------------------------------------------------------------------------------
 
 from pathlib import Path
-import os, shutil
+import os, shutil, math
 import matplotlib.pyplot as plt
 import numpy as np
+
+# Own
+from PostProccess import Create_Folder
 
 #-------------------------------------------------------------------------------
 # Main
@@ -15,99 +18,152 @@ def main_load_microstructure(dict_user, dict_pp):
     '''
     Main function to load microstructure.
     '''
-    # prepare folder
-    if Path('png/microstructure').exists():
-        shutil.rmtree('png/microstructure')
-    os.mkdir('png/microstructure')
+    print('\nLoad the microstructure\n')
+    Create_Folder('png/ms_loaded')
 
-    # load only the last microstructure
-    iteration = len(dict_pp['L_L_psi'])-1 
-    # generate the png used for the domains definitions
-    generate_png_microstructure(dict_pp, dict_pp['L_L_psi'][iteration], dict_pp['L_L_phi'][iteration], dict_pp['L_XYZ'], iteration, dict_user)
-    # write input file .i from a template  
-    write_i_load_microstructure(dict_user, dict_pp)
-    # run simulation 
-    call_moose_load_microstructure(dict_pp)
-    # read csv data
-    read_plot_csv_load_microstructure(dict_pp, dict_user, dict_pp['L_L_psi'][iteration], dict_pp['L_L_phi'][iteration])
-    # plot result
-    plot_strain_stress_evolution(dict_pp)
+    # initialization
+    if 'pull' in dict_pp['L_loading']:
+        L_YoungModulusSample = []
+        L_PoissonRatioSample = []
+    if 'shear' in dict_pp['L_loading']:
+        L_ShearModulusSample = []
+    if 'pull' in dict_pp['L_loading'] and 'shear' in dict_pp['L_loading']:
+        L_BulkModulusSample = []
+    L_time_extracted = []
+    L_hyd_extracted = []
+
+    for iteration in range(len(dict_pp['L_M_matter_b'])):
+        print(iteration+1,'/',len(dict_pp['L_M_matter_b']))
+        # mechanical continuity between the top and bottom
+        if dict_pp['L_mechanical_continuity'][iteration] == 1:
+            # extract time and hydration
+            L_time_extracted.append(dict_pp['L_time_pp_extracted'][iteration])
+            L_hyd_extracted.append(dict_pp['L_hyd_pp_extracted'][iteration])
+            for loading in dict_pp['L_loading']: 
+                # generate the png used for the domains definitions
+                generate_png_microstructure(dict_pp, iteration)
+                # prepare simulation
+                dict_pp['loading'] = loading
+                # write input file .i from a template  
+                write_i_load_microstructure(dict_user, dict_pp)
+                # run simulation 
+                call_moose_load_microstructure(dict_pp)
+                # read csv data
+                read_plot_csv_load_microstructure(dict_pp, dict_user, dict_pp['L_L_psi'][iteration], dict_pp['L_L_phi'][iteration])
+                # plot result
+                #plot_strain_stress_evolution(dict_pp)
+            # interpolate the mechanical properties
+            Interpolate_Mechanical_Props(dict_pp)
+            # save data
+            if 'pull' in dict_pp['L_loading']:
+                L_YoungModulusSample.append(dict_pp['YoungModulusSample'])
+                L_PoissonRatioSample.append(dict_pp['PoissonRatioSample'])
+            if 'shear' in dict_pp['L_loading']:
+                L_ShearModulusSample.append(dict_pp['ShearModulusSample'])
+            if 'pull' in dict_pp['L_loading'] and 'shear' in dict_pp['L_loading']:
+                L_BulkModulusSample.append(dict_pp['BulkModulusSample'])
+
+    # plot
+    if 'pull' in dict_pp['L_loading']:
+        # Young Modulus
+        fig, (ax1) = plt.subplots(1, 1, figsize=[16, 9])
+        ax1.plot(L_time_extracted, L_YoungModulusSample)
+        ax1.set_xlabel("time (s)")
+        ax1.set_ylabel("Young Modulus (Pa)")
+        fig.savefig('png/evol_time_YoungModulus.png')
+        plt.close(fig)
+        
+        fig, (ax1) = plt.subplots(1, 1, figsize=[16, 9])
+        ax1.plot(L_hyd_extracted, L_YoungModulusSample)
+        ax1.set_xlabel("hydration (%)")
+        ax1.set_ylabel("Young Modulus (Pa)")
+        fig.savefig('png/evol_hyd_YoungModulus.png')
+        plt.close(fig)
+    
+        # Poisson ratio
+        fig, (ax1) = plt.subplots(1, 1, figsize=[16, 9])
+        ax1.plot(L_time_extracted, L_PoissonRatioSample)
+        ax1.set_xlabel("time (s)")
+        ax1.set_ylabel("Poisson ratio (-)")
+        fig.savefig('png/evol_time_PoissonRatio.png')
+        plt.close(fig)
+        
+        fig, (ax1) = plt.subplots(1, 1, figsize=[16, 9])
+        ax1.plot(L_hyd_extracted, L_PoissonRatioSample)
+        ax1.set_xlabel("hyd (-)")
+        ax1.set_ylabel("Poisson ratio (-)")
+        fig.savefig('png/evol_hyd_PoissonRatio.png')
+        plt.close(fig)
+    if 'shear' in dict_pp['L_loading']:
+        # Shear Modulus
+        fig, (ax1) = plt.subplots(1, 1, figsize=[16, 9])
+        ax1.plot(L_time_extracted, L_ShearModulusSample)
+        ax1.set_xlabel("time (s)")
+        ax1.set_ylabel("Shear Modulus (Pa)")
+        fig.savefig('png/evol_time_ShearModulus.png')
+        plt.close(fig)
+        
+        fig, (ax1) = plt.subplots(1, 1, figsize=[16, 9])
+        ax1.plot(L_hyd_extracted, L_ShearModulusSample)
+        ax1.set_xlabel("hydration (%)")
+        ax1.set_ylabel("Shear Modulus (Pa)")
+        fig.savefig('png/evol_hyd_ShearModulus.png')
+        plt.close(fig)
+    if 'pull' in dict_pp['L_loading'] and 'shear' in dict_pp['L_loading']:
+        # Shear Modulus
+        fig, (ax1) = plt.subplots(1, 1, figsize=[16, 9])
+        ax1.plot(L_time_extracted, L_BulkModulusSample)
+        ax1.set_xlabel("time (s)")
+        ax1.set_ylabel("Bulk Modulus (Pa)")
+        fig.savefig('png/evol_time_BulkModulus.png')
+        plt.close(fig)
+        
+        fig, (ax1) = plt.subplots(1, 1, figsize=[16, 9])
+        ax1.plot(L_hyd_extracted, L_BulkModulusSample)
+        ax1.set_xlabel("hydration (%)")
+        ax1.set_ylabel("Bulk Modulus (Pa)")
+        fig.savefig('png/evol_hyd_BulkModulus.png')
+        plt.close(fig)
+
+    # save
+    if 'pull' in dict_pp['L_loading']:
+        dict_pp['L_YoungModulusSample'] = L_YoungModulusSample
+        dict_pp['L_PoissonRatioSample'] = L_PoissonRatioSample
+    if 'shear' in dict_pp['L_loading']:
+        dict_pp['L_ShearModulusSample'] = L_ShearModulusSample
+    if 'pull' in dict_pp['L_loading'] and 'shear' in dict_pp['L_loading']:
+        dict_pp['L_BulkModulusSample'] = L_BulkModulusSample
     
 #-------------------------------------------------------------------------------
 # Write picture to define domain
 #-------------------------------------------------------------------------------
 
-def generate_png_microstructure(dict_pp, L_psi, L_phi, L_XYZ, iteration, dict_user):
+def generate_png_microstructure(dict_pp, iteration):
     '''
     Generate a png file related to the microstructure.
-    '''
+    '''    
     # initialize the png
     data_png = np.array(np.zeros((dict_pp['n_mesh_pp'], dict_pp['n_mesh_pp'], 3)))
 
-    # discretize the dimensions
-    L_x_png = np.linspace(-dict_user['dim_domain']/2, dict_user['dim_domain']/2, dict_pp['n_mesh_pp']+1)
-    L_y_png = np.linspace(-dict_user['dim_domain']/2, dict_user['dim_domain']/2, dict_pp['n_mesh_pp']+1)
-
-    # Read mesh
-    L_x = np.linspace(-dict_user['dim_domain']/2, dict_user['dim_domain']/2, dict_user['n_mesh'])
-    L_y = np.linspace(-dict_user['dim_domain']/2, dict_user['dim_domain']/2, dict_user['n_mesh'])
-
-    # Rebuild phi/psi array
-    M_phi = np.array(np.zeros((dict_user['n_mesh']+1,dict_user['n_mesh']+1)))
-    M_psi = np.array(np.zeros((dict_user['n_mesh']+1,dict_user['n_mesh']+1)))
-    # iterate on the domain
-    for i in range(len(L_XYZ)):
-        # interpolate meshes
-        find_ix = abs(np.array(L_x)-L_XYZ[i][0])
-        find_iy = abs(np.array(L_y)-L_XYZ[i][1])
-        i_x = list(find_ix).index(min(find_ix))
-        i_y = list(find_iy).index(min(find_iy))
-        # rebuild
-        M_phi[-1-i_y,i_x] = L_phi[i]
-        M_psi[-1-i_y,i_x] = L_psi[i]
-
     # iterate on x
     for i_x_png in range(dict_pp['n_mesh_pp']):
-        # find coordinate x of mesh_pp in mesh
-        find_ix = abs(np.array(L_x)-L_x_png[i_x_png])
-        i_x_m = list(find_ix).index(min(find_ix))
-        find_ix = abs(np.array(L_x)-L_x_png[i_x_png+1])
-        i_x_p = list(find_ix).index(min(find_ix))
         # iterate on y
         for i_y_png in range(dict_pp['n_mesh_pp']):
-            # find coordinate y of mesh_pp in mesh
-            find_iy = abs(np.array(L_y)-L_y_png[i_y_png])
-            i_y_m = list(find_iy).index(min(find_iy))
-            find_iy = abs(np.array(L_y)-L_y_png[i_y_png+1])
-            i_y_p = list(find_iy).index(min(find_iy))
-
-            # compute mean value of phi and psi
-            n_i = 0
-            phi_i = 0
-            psi_i = 0
-            for i_x in range(i_x_m, i_x_p+1):
-                for i_y in range(i_y_m, i_y_p+1):
-                    n_i = n_i + 1
-                    phi_i = phi_i + M_phi[-1-i_y,i_x]
-                    psi_i = psi_i + M_psi[-1-i_y,i_x]
-            phi_i = phi_i/n_i 
-            psi_i = psi_i/n_i
-            
             # create image
-            if phi_i < 0.5 and psi_i < 0.5 :
+            if dict_pp['L_M_phi_b'][iteration][i_y_png, i_x_png] == 0 and\
+               dict_pp['L_M_psi_b'][iteration][i_y_png, i_x_png] == 0 :
                 # water
-                data_png[-1-i_y_png, i_x_png, :] = [0, 0, 0]
-            else :
-                if psi_i > phi_i:
-                    # C3S
-                    data_png[-1-i_y_png, i_x_png, :] = [1/255, 125/255, 125/255]
-                else:
-                    # CSH
-                    data_png[-1-i_y_png, i_x_png, :] = [2/255, 250/255, 250/255]
+                data_png[i_y_png, i_x_png, :] = [0, 0, 0]
+            elif dict_pp['L_M_psi_b'][iteration][i_y_png, i_x_png] == 1:
+                # C3S
+                data_png[i_y_png, i_x_png, :] = [1/255, 125/255, 125/255]
+            else:
+                # CSH
+                data_png[i_y_png, i_x_png, :] = [2/255, 250/255, 250/255]
 
     # generate the .png file
     plt.imsave('microstructure.png', data_png)
-    plt.imsave('png/microstructure/iteration_'+str(iteration)+'.png', data_png)
+    plt.imsave('png/ms_loaded/'+str(iteration)+'.png', data_png)
 
 #-------------------------------------------------------------------------------
 # Write .i
@@ -153,7 +209,7 @@ def write_i_load_microstructure(dict_user, dict_pp):
         if j == 86:
             line = line[:-1] + ' ' + str(dict_pp['Poisson_C3S']) + '\n'
         if j == 94:
-            if dict_user['CSH_type'] == 'elastic':
+            if dict_pp['CSH_type'] == 'elastic':
                 line = '''[./CSH_elastic]
                     type = ComputeIsotropicElasticityTensor
                     youngs_modulus = ''' + str(dict_pp['YoungModulus_CSH']) +'''
@@ -164,7 +220,7 @@ def write_i_load_microstructure(dict_user, dict_pp):
                     type = ComputeLinearElasticStress
                     block = 2
                 [../]\n'''            
-            elif dict_user['CSH_type'] == 'visco-elastic':
+            elif dict_pp['CSH_type'] == 'visco-elastic':
                 line = '''[./CSH_viscoelastic]
                     \ttype = GeneralizedMaxwellModel
                     \tcreep_modulus = ''' + str(dict_pp['YoungModulus_CSH']) +'''
@@ -177,7 +233,7 @@ def write_i_load_microstructure(dict_user, dict_pp):
                     \ttype = ComputeLinearViscoelasticStress
                     \tblock = 2
                 [../]\n'''  
-        if j == 98 and dict_user['CSH_type'] == 'visco-elastic':
+        if j == 98 and dict_pp['CSH_type'] == 'visco-elastic':
             line = '''[./update]
                 \ttype = LinearViscoelasticityManager
                 \tviscoelastic_model = CSH_viscoelastic
@@ -255,10 +311,18 @@ def read_plot_csv_load_microstructure(dict_pp, dict_user, L_psi, L_phi):
         L_stress_yy.append((L_stress_yy_C3S[-1]*s_psi + L_stress_yy_CSH[-1]*s_phi)/(s_psi+s_phi))
         
     # save data
-    dict_pp['L_L_strain'].append(L_strain)
-    dict_pp['L_L_stress_xx'].append(L_stress_xx)
-    dict_pp['L_L_stress_xy'].append(L_stress_xy)
-    dict_pp['L_L_stress_yy'].append(L_stress_yy)
+    dict_pp['L_strain'] = L_strain
+    dict_pp['L_stress_xx'] = L_stress_xx
+    dict_pp['L_stress_xy'] = L_stress_xy
+    dict_pp['L_stress_yy'] = L_stress_yy
+
+    if dict_pp['loading'] == 'pull':
+        dict_pp['pull_L_strain'] = L_strain
+        dict_pp['pull_L_stress_xx'] = L_stress_xx
+        dict_pp['pull_L_stress_yy'] = L_stress_yy
+    if dict_pp['loading'] == 'shear':
+        dict_pp['shear_L_strain'] = L_strain
+        dict_pp['shear_L_stress_xy'] = L_stress_xy
     
     # plot
     '''fig, ax1 = plt.subplots(1,1,figsize=(16,9))
@@ -287,16 +351,109 @@ def plot_strain_stress_evolution(dict_pp):
     # open
     fig, ax1 = plt.subplots(1,1,figsize=(16,9))
     # iterate on iteration
-    for ite in range(len(dict_pp['L_L_strain'])):    
-        if dict_pp['loading'] == 'pull':
-            ax1.plot(dict_pp['L_L_strain'][ite], dict_pp['L_L_stress_yy'][ite], label=ite, linewidth=6)
-        elif dict_pp['loading'] == 'shear':
-            ax1.plot(dict_pp['L_L_strain'][ite], dict_pp['L_L_stress_xy'][ite], label=ite, linewidth=6)
+    if dict_pp['loading'] == 'pull':
+        ax1.plot(dict_pp['L_strain'], dict_pp['L_stress_yy'], linewidth=6)
+    elif dict_pp['loading'] == 'shear':
+        ax1.plot(dict_pp['L_strain'], dict_pp['L_stress_xy'], linewidth=6)
     # close
-    ax1.legend(fontsize = 25)
     ax1.set_xlabel('strain (-)', fontsize=25)
     ax1.set_ylabel('stress (Pa)', fontsize=25)
     ax1.tick_params(axis='both', labelsize=20, width=3, length=3) 
     fig.tight_layout()
-    fig.savefig('png/evol_strain_stress.png')    
+    fig.savefig('png/'+dict_pp['loading']+'_evol_strain_stress.png')    
     plt.close(fig)
+
+#-------------------------------------------------------------------------------
+# least square method for linear function
+#-------------------------------------------------------------------------------
+
+def lsm_linear(L_y, L_x):
+    '''
+    Least square method to determine y = ax + b
+    '''
+    # compute sums
+    s_1 = 0
+    s_2 = 0
+    s_3 = 0
+    s_4 = 0
+    s_5 = 0
+    for i in range(len(L_y)):
+        s_1 = s_1 + 1*L_x[i]*L_x[i]
+        s_2 = s_2 + 1*L_x[i]
+        s_3 = s_3 + 1
+        s_4 = s_4 + 1*L_x[i]*L_y[i]
+        s_5 = s_5 + 1*L_y[i]
+    # solve problem
+    M = np.array([[s_1, s_2],[s_2, s_3]])
+    V = np.array([s_4, s_5])
+    result = np.linalg.solve(M, V)
+    a = result[0]
+    b = result[1]
+    # correlation linear
+    cov = 0
+    vx = 0
+    vy = 0
+    for i in range(len(L_y)):
+        cov = cov + (L_x[i]-np.mean(L_x))*(L_y[i]-np.mean(L_y))
+        vx = vx + (L_x[i]-np.mean(L_x))*(L_x[i]-np.mean(L_x))
+        vy = vy + (L_y[i]-np.mean(L_y))*(L_y[i]-np.mean(L_y))
+    corr = cov/(math.sqrt(vx*vy))
+    return a, b, corr
+
+#-------------------------------------------------------------------------------
+# interpolate mechanical properties
+#-------------------------------------------------------------------------------
+
+def Interpolate_Mechanical_Props(dict_pp):
+    '''
+    Interpolate the mechanical properties from loading tests:
+        - Young Modulus Y
+        - Shear Modulus G
+    Interpolalate the mechanical properties from relations:
+        - Poisson ratio v = Y/2G - 1
+        - Bulk Modulus K = E/(3(1-2v))
+    '''
+    # check if pull test has been done
+    if 'pull' in dict_pp['L_loading']:
+        # extract data
+        L_strain = dict_pp['pull_L_strain']
+        L_stress_xx = dict_pp['pull_L_stress_xx']
+        L_stress_yy = dict_pp['pull_L_stress_yy']
+        # interpolate function 
+        a, b, corr = lsm_linear(L_stress_yy, L_strain)
+        # print result
+        #print('\nYoung Modulus interpolation (y=ax+b):')
+        #print('a:', a, 'b:', b, 'cor:', corr)
+        # save parameter
+        YoungModulusSample = a
+        dict_pp['YoungModulusSample'] = YoungModulusSample
+        
+        # interpolate function 
+        a, b, corr = lsm_linear(L_stress_xx, L_stress_yy)
+        # print result
+        #print('\nPoisson ratio interpolation (y=ax+b):')
+        #print('a:', a, 'b:', b, 'cor:', corr)
+        # save parameter
+        PoissonRatioSample = a
+        dict_pp['PoissonRatioSample'] = PoissonRatioSample
+    # check if shear test has been done
+    if 'shear' in dict_pp['L_loading']:
+        # extract data
+        L_strain = dict_pp['shear_L_strain']
+        L_stress_xy = dict_pp['shear_L_stress_xy']
+        # interpolate function 
+        a, b, corr = lsm_linear(L_stress_xy, L_strain)
+        # print result
+        #print('\nShear Modulus interpolation (y=ax+b):')
+        #print('a:', a, 'b:', b, 'cor:', corr)
+        # save parameter
+        ShearModulusSample = a
+        dict_pp['ShearModulusSample'] = ShearModulusSample
+    # compute Bulk Modulus
+    if 'pull' in dict_pp['L_loading'] and 'shear' in dict_pp['L_loading']:
+        BulkModulusSample = YoungModulusSample/3/(1-2*PoissonRatioSample)
+        #print('\nBulk Modulus estimation:')
+        #print(BulkModulusSample)
+        dict_pp['BulkModulusSample'] = BulkModulusSample
+
+

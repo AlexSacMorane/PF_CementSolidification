@@ -30,36 +30,28 @@ def Adapt_I(dict_sample, dict_user):
             line = line[:-1] + ' ' + str(min(dict_sample['L_y'])) + '\n'
         if j == 10:
             line = line[:-1] + ' ' + str(max(dict_sample['L_y'])) + '\n'
-        if j == 32:
-            if dict_user['IC_mode'] == 'OneGrain_Seed' or dict_user['IC_mode'] == 'Spheres_Seed' or dict_user['IC_mode'] == 'Powder_Seed':
-                line = line[:-1] + 'psi_txt\n'
         if j == 100:
             line = line[:-1] + ' ' + str(dict_user['a_phi']) + '\n'
         if j == 106:
             line = line[:-1] + ' ' + str(dict_user['a_psi']) + '\n'
-        if j == 123:
+        if j == 121:
             line = line[:-1] + " '" + str(dict_user['L']) + ' ' + str(dict_user['kappa']) + ' '\
                                     + str(dict_user['L']) + ' ' + str(dict_user['kappa']) + " 1'\n"
-        if j == 132:
-            line = line[:-1] + " '" + str(dict_user['Energy_barrier']) + ' ' + str(dict_user['chi_c_phi']) + ' ' + str(dict_user['C_eq_phi'])\
-                             + ' ' + str(dict_user['A_tilt_phi']) + ' ' + str(dict_user['B_tilt_phi'])\
-                             + ' ' + str(dict_user['C_tilt_phi']) + ' ' + str(dict_user['D_tilt_phi']) + "'\n"
-        if j == 144:
+        if j == 141:
+            line = line[:-1] + " '" + str(dict_user['Energy_barrier']) + ' ' + str(dict_user['chi_c_phi']) + ' ' + str(dict_user['C_eq_phi']) + "'\n"
+        if j == 153:
+            line = line[:-1] + " '" + str(dict_user['Energy_barrier']) + "'\n"
+        if j == 166:
             line = line[:-1] + " '" + str(dict_user['Energy_barrier']) + ' ' + str(dict_user['chi_c_psi']) + ' ' + str(dict_user['C_eq_psi'])+ "'\n"
-        if j == 155:
+        if j == 178:
             line = line[:-1] + " '" + str(dict_user['k_c_0']) + ' ' + str(dict_user['k_c_exp']) + "'\n"
-        if j == 161:
-            if dict_user['IC_mode'] == 'OneGrain_Seed' or dict_user['IC_mode'] == 'Spheres_Seed' or dict_user['IC_mode'] == 'Powder_Seed':
-                line = line[:-1] + "'phi_txt psi_txt c_txt'\n"
-        if j == 202 or j == 203 or j == 206 or j == 207:
+        if j == 217 or j == 218 or j == 221 or j == 222:
             line = line[:-1] + " " + str(dict_user['crit_res']) + "\n"
-        if j == 210:
-            line = line[:-1] + " " + str(2*dict_user['n_ite_max']*dict_user['dt_PF']) + "\n"
-        if j == 211:
+        if j == 225:
             line = line[:-1] + " " + str(dict_user['n_ite_max']) + "\n"
-        if j == 215:
+        if j == 229:
             line = line[:-1] + " " + str(dict_user['dt_PF']) + "\n"
-        if j == 235:
+        if j == 249:
             line = line[:-1] + "'" + str(dict_user['a_phi']) + ' ' + str(dict_user['a_psi']) + " 1'\n"
         file_to_write.write(line)
     file_to_write.close()

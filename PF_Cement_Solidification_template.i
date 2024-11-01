@@ -29,7 +29,7 @@
     outputs = exodus
     [./InitialCondition]
       type = FunctionIC
-      function =
+      function = psi_txt
     [../]
   [../]
   [./c]
@@ -114,37 +114,60 @@
 []
 
 [Materials]
-  active = 'var consts free_energy_phi free_energy_psi'
-
   [./consts]
     # L_psi or L_phi can be changed to play on the influence of the dissolution/precipitation kinetics
     type = GenericConstantMaterial
     prop_names  = 'L_psi kappa_psi L_phi kappa_phi L_c'
     prop_values =
   [../]
-
+  
   [./free_energy_phi]
     type = DerivativeParsedMaterial
     block = 0
     property_name = g_phi
     coupled_variables = 'phi psi c'
-    constant_names = 'W x_c c_eq A B C D '
-    constant_expressions =
-    expression = 'W*(phi^2)*((1-phi)^2) + x_c*(c-c_eq)*(A*phi^3+B*phi^2+C*phi+D)*(1-(psi^2)*((1-psi)^2))'
+    material_property_names = 'g_phi_a(phi,psi,c) g_phi_b(phi,psi,c)'
+    expression = 'if(psi<0.5, g_phi_a, g_phi_b)'
     enable_jit = true
     derivative_order = 1
+    #outputs = exodus
+  [../]
+  [./free_energy_phi_a]
+    type = DerivativeParsedMaterial
+    block = 0
+    property_name = g_phi_a
+    coupled_variables = 'phi psi c'
+    constant_names = 'W x_c c_eq'
+    constant_expressions =
+    expression = 'W*(phi^2)*((1-phi)^2) + x_c*(c-c_eq)*(1-(3*phi^2-2*phi^3))'
+    enable_jit = true
+    derivative_order = 1
+    #outputs = exodus
+  [../]
+  [./free_energy_phi_b]
+    type = DerivativeParsedMaterial
+    block = 0
+    property_name = g_phi_b
+    coupled_variables = 'phi psi c'
+    constant_names = 'W'
+    constant_expressions =
+    expression = 'W*(phi^2)*((1-phi)^2) - W*0.1*(1-(3*phi^2-2*phi^3))'
+    enable_jit = true
+    derivative_order = 1
+    #outputs = exodus
   [../]
 
   [./free_energy_psi]
     type = DerivativeParsedMaterial
     block = 0
     property_name = g_psi
-    coupled_variables = 'psi c'
+    coupled_variables = 'phi psi c'
     constant_names = 'W x_c c_eq'
     constant_expressions =
     expression = 'W*(psi^2)*((1-psi)^2) - x_c*(c-c_eq)*(3*psi^2-2*psi^3)'
     enable_jit = true
-    derivative_order = 1
+    derivative_order = 2
+    #outputs = exodus
   [../]
 
   [./var]
@@ -153,13 +176,11 @@
     coupled_variables = 'psi phi'
     constant_names = 'k_c_0 k_c_exp'
     constant_expressions =
-    expression = 'k_c_0*(1-psi^3*(6*psi^2-15*psi+10))*exp(-k_c_exp*phi)'
+    expression = 'k_c_0*(1-psi)*exp(-k_c_exp*phi)'
   [../]
 []
 
 [Functions]
-  active =
-
   [phi_txt]
     type = PiecewiseMultilinear
     data_file = txt/phi.txt
@@ -167,12 +188,6 @@
   [psi_txt]
     type = PiecewiseMultilinear
     data_file = txt/psi.txt
-  []
-  [psi_png]
-    type = ImageFunction
-    file = Petersen2018_IC.png
-    scale = 0.00392156862745098
-    component = 0
   []
   [c_txt]
     type = PiecewiseMultilinear
@@ -207,7 +222,6 @@
   nl_abs_tol = 
 
   start_time = 0.0
-  end_time = 
   num_steps = 
 
   [./TimeStepper]
@@ -236,11 +250,21 @@
   []
 []
 
+[UserObjects]
+  [arnold]
+    type = Terminator
+    expression = 'phi_pp > 0.9'
+    fail_mode = HARD
+    execute_on = TIMESTEP_END
+  []
+[]
+
 [Outputs]
   execute_on = 'initial timestep_end'
   exodus = true
   [./other]
     type = VTK
+    execute_on = 'TIMESTEP_END'
   [../]
   [console]
     type = Console
