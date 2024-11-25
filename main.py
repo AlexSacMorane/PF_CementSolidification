@@ -21,10 +21,10 @@ from Load_microstructures import *
 #------------------------------------------------------------------------------
 
 # Description of the domain (total)
-dim_domain = 10 # size of the study domain (µm)
+dim_domain = 100 # size of the study domain (µm)
 
 # Description of the mesh
-n_mesh = 200 # number of element in one direction of the mesh
+n_mesh = 300 # number of element in one direction of the mesh
              # the number of nodes is n_mesh+1
 d_mesh = dim_domain/n_mesh # size of the mesh element
 
@@ -46,14 +46,19 @@ if IC_mode=='OneGrain_Seed_fixed':
     
 if IC_mode=='Spheres_Seed' :
     # Description of the grain (size distribution)
-    R = 0.25 # size of the grain of cement (µm)
-    R_var = 1 # variance of the size of the grain, pf cement
-    w_g_target = 0.42 # mass ratio water/cement targetted
+    PSD_mode = 'Given' # Uniform or Given
+    if PSD_mode == 'Uniform':
+        R = 0.25 # size of the grain of cement (µm)
+        R_var = 1 # variance of the size of the grain, pf cement
+    if PSD_mode == 'Given':
+        L_R      = [ 2.5,  3.5,  4.5,  5.5,  6.5,  7.5,  8.5,  9.5,  10.5] # list of radius of the grain (µm)
+        L_perc_R = [0.66, 0.19, 0.07, 0.03, 0.02, 0.01, 0.01, 0.01] # list of percentage (-)
+    w_g_target = 0.5 # mass ratio water/cement targetted
     rho_H20 = 1000 # density water (kg.m-3)
     rho_g = 3200 # density cement (kg.m-3)
-    factor_int = 0.15 # additional distance (considering interface overlapping)
-    n_try = 50 # maximum tries to determine a compatible configuration
+    factor_int = 2 # additional distance (considering interface overlapping)
     n_seed = 10 # number of seed
+    n_steps = 10 # number of step in increasing the radius
 
 if IC_mode=='Powder_Seed':
     # Description of the powder
@@ -70,31 +75,32 @@ n_int = 6 # number of mesh in the interface
 w_int = d_mesh*n_int # the interface thickness
 kappa = Energy_barrier*w_int*w_int/9.86 # gradient coefficient for free energies phi/psi
 L = 1 # Mobility value used for free energies (phi/psi) (s-1)
+noise = True # apply noise on the CSH phase variable
     
 # Reaction C3S (psi) -> c
 C_eq_psi = 1 # equilibrium constant for the reaction
-a_psi = 4.688 # conversion term (psi -> c)
+a_psi = (3+1)*2.344 # conversion term (psi -> c)
 chi_c_psi = 0.1*Energy_barrier # coefficient used to tilt the free energies psi (dependent on the c value)
 
 # Reaction c -> CSH (phi) 
 C_eq_phi = 0 # equilibrium constant for the reaction
-a_phi = 1 # conversion term (phi -> c)
+a_phi = 3 # conversion term (phi -> c)
 chi_c_phi = 0.1*Energy_barrier # coefficient used to tilt the free energies phi (dependent on the c value)
 
 # description of the solute diffusion
-k_c_0 = 20 # coefficient of solute diffusion (µm2.s-1)
+k_c_0 = 50 # coefficient of solute diffusion (µm2.s-1)
 k_c_exp = 6 # decay of the solute diffusion because of the gel (in the exp term)
 
 # computing information
 n_proc = 4 # number of processor used
-crit_res = 1e-2 # convergence criteria on residual
+crit_res = 5*1e-2 # convergence criteria on residual
 reduce_memory_usage = True # reduce memory usage
 n_vtk_max = 30 # if True, number maximum of vtks (+ 1)
 PostProccess = True # Post proccessing
 
 # PF time parameters
 dt_PF = 0.15  # time step
-n_ite_max = 300 # maximum number of iteration
+n_ite_max = 500 # maximum number of iteration
 
 # compute performances
 tic = time.perf_counter()
@@ -113,6 +119,7 @@ dict_user = {
 'w_int': w_int,
 'kappa': kappa,
 'L': L,
+'noise': noise,
 'crit_res': crit_res,
 'C_eq_psi': C_eq_psi,
 'a_psi': a_psi,
@@ -141,14 +148,19 @@ if IC_mode=='OneGrain_Seed_fixed':
     dict_user['rho_g'] = rho_g
     dict_user['rho_water'] = rho_H20
 if IC_mode=='Spheres_Seed' :
-    dict_user['R'] = R
-    dict_user['R_var'] = R_var
+    dict_user['PSD_mode'] = PSD_mode
+    if PSD_mode == 'Uniform':
+        dict_user['R'] = R
+        dict_user['R_var'] = R_var
+    if PSD_mode == 'Given':
+        dict_user['L_R'] = L_R
+        dict_user['L_perc_R'] = L_perc_R
     dict_user['rho_g'] = rho_g
     dict_user['rho_water'] = rho_H20
     dict_user['w_g_target'] = w_g_target
     dict_user['factor_int'] = factor_int
-    dict_user['n_try'] = n_try
     dict_user['n_seed'] = n_seed
+    dict_user['n_steps'] = n_steps
 if IC_mode=='Powder_Seed' :
     dict_user['R'] = R
     dict_user['R_var'] = R_var
@@ -435,53 +447,74 @@ if max(hyd_pp) > 50:
     for t_pp in time_pp:
         time_t50_pp.append(t_pp/t50)
 
-    # hydration from Nguyen, 2024 (w/c=0.50)
-    L_time_nguyen =     [    6,   20,   38,   62,   90,  126,  167,  217,  273,  326,  392,  462,  529,  624] # h
-    L_time_t50_nguyen = [ 0.06, 0.20, 0.38, 0.63, 0.91, 1.27, 1.69, 2.19, 2.76, 3.29, 3.96, 4.67, 5.34, 6.30] # -
-    L_hyd_nguyen =      [   13,   27,   37,   45,   49,   53,   55,   57,   58,   59,   59,   60,   60,   61] # %
+    if w_g_target == 0.5:
+        # hydration from Nguyen, 2024 (w/c=0.50)
+        L_time_nguyen =     [    6,   20,   38,   62,   90,  126,  167,  217,  273,  326,  392,  462,  529,  624] # h
+        L_time_t50_nguyen = [ 0.06, 0.20, 0.38, 0.63, 0.91, 1.27, 1.69, 2.19, 2.76, 3.29, 3.96, 4.67, 5.34, 6.30] # -
+        L_hyd_nguyen =      [   13,   27,   37,   45,   49,   53,   55,   57,   58,   59,   59,   60,   60,   61] # %
 
-    # plot
-    fig, ax1 = plt.subplots(1,1,figsize=(16,9))
-    ax1.plot(time_t50_pp, hyd_pp, linewidth=6, label='PF')
-    ax1.plot(L_time_t50_nguyen, L_hyd_nguyen, linewidth=6, label='Nguyen, 2024')
-    ax1.legend(fontsize=20)
-    ax1.set_xlabel(r'time / time$_{50}$ (-)', fontsize=25)
-    ax1.set_ylabel('hydration (%)', fontsize=25)
-    ax1.tick_params(axis='both', labelsize=20, width=3, length=3) 
-    fig.tight_layout()
-    fig.savefig('png/evol_time_hyd_vs_exp/nguyen.png')    
-    plt.close(fig)
+        # plot
+        fig, ax1 = plt.subplots(1,1,figsize=(16,9))
+        ax1.plot(time_t50_pp, hyd_pp, linewidth=6, label='PF')
+        ax1.plot(L_time_t50_nguyen, L_hyd_nguyen, linewidth=6, label='Nguyen, 2024')
+        ax1.legend(fontsize=20)
+        ax1.set_xlabel(r'time / time$_{50}$ (-)', fontsize=25)
+        ax1.set_ylabel('hydration (%)', fontsize=25)
+        ax1.tick_params(axis='both', labelsize=20, width=3, length=3) 
+        fig.tight_layout()
+        #fig.savefig('png/evol_time_hyd_vs_exp/nguyen.png')    
+        plt.close(fig)
 
-    # hydration from Petersen, 2018a (w/c=0.42)
-    L_time_t50_petersen_a = [0.0734, 0.2739, 0.4549, 0.6260, 0.8217, 1.1054, 1.4944, 2.0200, 2.4308, 2.8759, 3.4481, 4.0106, 4.6611, 5.2480, 5.7664, 6.2653] # -
-    L_hyd_petersen_a      = [     4,     10,     18,     32,     43,     54,     66,     72,     76,     80,     84,     87,     89,     91,     93,     94] # %
+    if w_g_target == 0.42:
+        # hydration from Petersen, 2018a (w/c=0.42)
+        L_time_t50_petersen_a = [0.0734, 0.2739, 0.4549, 0.6260, 0.8217, 1.1054, 1.4944, 2.0200, 2.4308, 2.8759, 3.4481, 4.0106, 4.6611, 5.2480, 5.7664, 6.2653] # -
+        L_hyd_petersen_a      = [     4,     10,     18,     32,     43,     54,     66,     72,     76,     80,     84,     87,     89,     91,     93,     94] # %
 
-    # plot
-    fig, ax1 = plt.subplots(1,1,figsize=(16,9))
-    ax1.plot(time_t50_pp, hyd_pp, linewidth=6, label='PF')
-    ax1.plot(L_time_t50_petersen_a, L_hyd_petersen_a, linewidth=6, label='Petersen, 2018')
-    ax1.legend(fontsize=20)
-    ax1.set_xlabel(r'time / time$_{50}$ (-)', fontsize=25)
-    ax1.set_ylabel('hydration (%)', fontsize=25)
-    ax1.tick_params(axis='both', labelsize=20, width=3, length=3) 
-    fig.tight_layout()
-    fig.savefig('png/evol_time_hyd_vs_exp/petersen_a.png')    
-    plt.close(fig)
+        # plot
+        fig, ax1 = plt.subplots(1,1,figsize=(16,9))
+        ax1.plot(time_t50_pp, hyd_pp, linewidth=6, label='PF')
+        ax1.plot(L_time_t50_petersen_a, L_hyd_petersen_a, linewidth=6, label='Petersen, 2018')
+        ax1.legend(fontsize=20)
+        ax1.set_xlabel(r'time / time$_{50}$ (-)', fontsize=25)
+        ax1.set_ylabel('hydration (%)', fontsize=25)
+        ax1.tick_params(axis='both', labelsize=20, width=3, length=3) 
+        fig.tight_layout()
+        fig.savefig('png/evol_time_hyd_vs_exp/petersen_a.png')    
+        plt.close(fig)
 
-    # hydration from Petersen, 2018b (w/c=0.42)
-    L_time_t50_petersen_b = [0.0355, 0.0927, 0.1500, 0.2263, 0.3272, 0.4172, 0.5018, 0.6354, 0.7295, 0.8344, 0.9340, 1.0771, 1.1835, 1.3253, 1.4644, 1.5980, 1.7439] # -
-    L_hyd_petersen_b      = [     5,     11,     19,     27,     33,     37,     40,     44,     45,     48,     49,     51,     53,     55,     57,     59,     60] # %
+        # hydration from Petersen, 2018b (w/c=0.42)
+        L_time_t50_petersen_b = [0.0355, 0.0927, 0.1500, 0.2263, 0.3272, 0.4172, 0.5018, 0.6354, 0.7295, 0.8344, 0.9340, 1.0771, 1.1835, 1.3253, 1.4644, 1.5980, 1.7439] # -
+        L_hyd_petersen_b      = [     5,     11,     19,     27,     33,     37,     40,     44,     45,     48,     49,     51,     53,     55,     57,     59,     60] # %
 
-    fig, ax1 = plt.subplots(1,1,figsize=(16,9))
-    ax1.plot(time_t50_pp, hyd_pp, linewidth=6, label='PF')
-    ax1.plot(L_time_t50_petersen_b, L_hyd_petersen_b, linewidth=6, label='Petersen, 2018')
-    ax1.legend(fontsize=20)
-    ax1.set_xlabel(r'time / time$_{50}$ (-)', fontsize=25)
-    ax1.set_ylabel('hydration (%)', fontsize=25)
-    ax1.tick_params(axis='both', labelsize=20, width=3, length=3) 
-    fig.tight_layout()
-    fig.savefig('png/evol_time_hyd_vs_exp/petersen_b.png')    
-    plt.close(fig)
+        fig, ax1 = plt.subplots(1,1,figsize=(16,9))
+        ax1.plot(time_t50_pp, hyd_pp, linewidth=6, label='PF')
+        ax1.plot(L_time_t50_petersen_b, L_hyd_petersen_b, linewidth=6, label='Petersen, 2018')
+        ax1.legend(fontsize=20)
+        ax1.set_xlabel(r'time / time$_{50}$ (-)', fontsize=25)
+        ax1.set_ylabel('hydration (%)', fontsize=25)
+        ax1.tick_params(axis='both', labelsize=20, width=3, length=3) 
+        fig.tight_layout()
+        fig.savefig('png/evol_time_hyd_vs_exp/petersen_b.png')    
+        plt.close(fig)
+
+    if w_g_target == 0.3:
+        # hydration from Nguyen, 2024 (w/c=0.30)
+        # strange ??
+        L_time_nguyen =     [    7,   36,   61,   91,  127,  169,  215,  270,  327,  392,  464,  544,  627] # h
+        L_time_t50_nguyen = [ 0.07, 0.36, 0.61, 0.91, 1.27, 1.69, 2.15, 2.70, 3.27, 3.92, 4.64, 5.44, 6.27] # -
+        L_hyd_nguyen =      [   14,   37,   45,   49,   53,   55,   57,   58,   59,   60,   60,   61,   61] # %
+
+        # plot
+        fig, ax1 = plt.subplots(1,1,figsize=(16,9))
+        ax1.plot(time_t50_pp, hyd_pp, linewidth=6, label='PF')
+        ax1.plot(L_time_t50_nguyen, L_hyd_nguyen, linewidth=6, label='Nguyen, 2024')
+        ax1.legend(fontsize=20)
+        ax1.set_xlabel(r'time / time$_{50}$ (-)', fontsize=25)
+        ax1.set_ylabel('hydration (%)', fontsize=25)
+        ax1.tick_params(axis='both', labelsize=20, width=3, length=3) 
+        fig.tight_layout()
+        fig.savefig('png/evol_time_hyd_vs_exp/nguyen.png')    
+        plt.close(fig)
 
 #-------------------------------------------------------------------------------
 # Post proccess (read vtk)
