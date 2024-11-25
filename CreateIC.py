@@ -701,22 +701,25 @@ def Insert_Grains_Seed(dict_sample, dict_user):
 
     # adapt maps
     M_psi = M_psi - 0.5
-    M_phi = M_phi - 0.5
+    if n_seed > 0:
+        M_phi = M_phi - 0.5
 
     # compute the signed distance functions
-    sd_phi = skfmm.distance(M_phi, dx = np.array([L_x[1]-L_x[0],L_y[1]-L_y[0]]))
     sd_psi = skfmm.distance(M_psi, dx = np.array([L_x[1]-L_x[0],L_y[1]-L_y[0]]))
+    if n_seed > 0:
+        sd_phi = skfmm.distance(M_phi, dx = np.array([L_x[1]-L_x[0],L_y[1]-L_y[0]]))
 
     # compute the phase field variables
     for i_x in range(len(L_x)):
         for i_y in range(len(L_y)):
             # phi
-            if sd_phi[i_y, i_x] > dict_user['w_int']/2: # inside the grain
-                M_phi[i_y, i_x] = 1
-            elif sd_phi[i_y, i_x] < -dict_user['w_int']/2: # outside the grain
-                M_phi[i_y, i_x] = 0
-            else : # in the interface
-                M_phi[i_y, i_x] = 0.5*(1+math.cos(math.pi*(-sd_phi[i_y, i_x]+dict_user['w_int']/2)/(dict_user['w_int'])))
+            if n_seed > 0:
+                if sd_phi[i_y, i_x] > dict_user['w_int']/2: # inside the grain
+                    M_phi[i_y, i_x] = 1
+                elif sd_phi[i_y, i_x] < -dict_user['w_int']/2: # outside the grain
+                    M_phi[i_y, i_x] = 0
+                else : # in the interface
+                    M_phi[i_y, i_x] = 0.5*(1+math.cos(math.pi*(-sd_phi[i_y, i_x]+dict_user['w_int']/2)/(dict_user['w_int'])))
             # psi
             if sd_psi[i_y, i_x] > dict_user['w_int']/2: # inside the grain
                 M_psi[i_y, i_x] = 1
