@@ -42,11 +42,7 @@
 []
 
 [Kernels]
-  active = 'dphidt ACBulk_phi ACInterface_phi dpsidt ACBulk_psi ACInterface_psi dcdt phi_c psi_c c_diffusion'
-
-  #
   # Order parameter phi
-  #
   [./dphidt]
     type = TimeDerivative
     variable = phi
@@ -64,10 +60,14 @@
     mob_name = L_phi
     kappa_name = kappa_phi
   [../]
+  [./noise_conserved_langevin]
+    type = ConservedLangevinNoise
+    amplitude = 
+    variable = phi
+    noise = uniform_noise
+  []
 
-  #
   # Order parameter psi
-  #
   [./dpsidt]
     type = TimeDerivative
     variable = psi
@@ -86,9 +86,7 @@
     kappa_name = kappa_psi
   [../]
 
-  #
   # Order parameter c
-  #
   [./dcdt]
     type = TimeDerivative
     variable = c
@@ -110,6 +108,23 @@
     kappa_name = kappa_c
     mob_name = L_c
     variable = c
+  [../]
+[]
+
+[BCs]
+  [./Periodic]
+    [./per_phi_xy]
+      variable = phi
+      auto_direction = 'x y'
+    [../]
+    [./per_psi_xy]
+      variable = psi
+      auto_direction = 'x y'
+    [../]
+    [./per_c_xy]
+      variable = c
+      auto_direction = 'x y'
+    [../]
   [../]
 []
 
@@ -178,6 +193,13 @@
     constant_expressions =
     expression = 'k_c_0*(1-psi)*exp(-k_c_exp*phi)'
   [../]
+
+  [./pore]
+    type = ParsedMaterial
+    property_name = pore_mat
+    coupled_variables = 'psi phi'
+    expression = '(1-psi)*(1-phi)'
+  [../]
 []
 
 [Functions]
@@ -230,6 +252,13 @@
   [../]
 []
 
+[UserObjects]
+  [./uniform_noise]
+    type = ConservedMaskedUniformNoise
+    mask = pore_mat
+  [../]
+[]
+
 [Postprocessors]
   [phi_pp]
     type = ElementAverageValue
@@ -251,9 +280,15 @@
 []
 
 [UserObjects]
-  [arnold]
+  [john_connor]
     type = Terminator
-    expression = 'phi_pp > 0.9'
+    expression = 'phi_pp > 0.85'
+    fail_mode = HARD
+    execute_on = TIMESTEP_END
+  []
+  [sarah_connor]
+    type = Terminator
+    expression = 'phi_pp < 1e-5'
     fail_mode = HARD
     execute_on = TIMESTEP_END
   []
