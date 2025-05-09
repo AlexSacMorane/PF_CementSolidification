@@ -62,7 +62,7 @@
   [../]
   [./noise_conserved_langevin]
     type = ConservedLangevinNoise
-    amplitude = 
+    amplitude =
     variable = phi
     noise = uniform_noise
   []
@@ -135,7 +135,7 @@
     prop_names  = 'L_psi kappa_psi L_phi kappa_phi L_c'
     prop_values =
   [../]
-  
+
   [./free_energy_phi]
     type = DerivativeParsedMaterial
     block = 0
@@ -236,19 +236,19 @@
   solve_type = 'NEWTON'
 
   l_max_its = 20
-  l_tol = 
-  l_abs_tol = 
+  l_tol =
+  l_abs_tol =
 
   nl_max_its = 10
-  nl_rel_tol = 
-  nl_abs_tol = 
+  nl_rel_tol =
+  nl_abs_tol =
 
   start_time = 0.0
-  num_steps = 
+  num_steps =
 
   [./TimeStepper]
     type = SolutionTimeAdaptiveDT
-    dt = 
+    dt =
   [../]
 []
 
@@ -275,14 +275,14 @@
   [sum_mat_pp]
     type = LinearCombinationPostprocessor
     pp_names = 'phi_pp psi_pp c_pp'
-    pp_coefs = 
+    pp_coefs =
   []
 []
 
 [UserObjects]
   [john_connor]
     type = Terminator
-    expression = 'phi_pp > 0.85'
+    expression = 'phi_pp > 0.9'
     fail_mode = HARD
     execute_on = TIMESTEP_END
   []

@@ -34,7 +34,7 @@ def Adapt_I(dict_sample, dict_user):
             if dict_user['noise']:
                 line = line[:-1] + ' ' + str(5) + '\n'
             else :
-                line = line[:-1] + ' ' + str(0) + '\n'    
+                line = line[:-1] + ' ' + str(0) + '\n'
         if j == 98:
             line = line[:-1] + ' ' + str(dict_user['a_phi']) + '\n'
         if j == 104:

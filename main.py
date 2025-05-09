@@ -24,7 +24,7 @@ from Load_microstructures import *
 dim_domain = 100 # size of the study domain (µm)
 
 # Description of the mesh
-n_mesh = 300 # number of element in one direction of the mesh
+n_mesh = 500 # number of element in one direction of the mesh
              # the number of nodes is n_mesh+1
 d_mesh = dim_domain/n_mesh # size of the mesh element
 
@@ -43,7 +43,7 @@ if IC_mode=='OneGrain_Seed_fixed':
     rho_g = 3200 # density cement (kg.m-3)
     w_g_target = 0.4 # mass ratio water/cement targetted
     R = dim_domain*math.sqrt(1/(math.pi*(rho_g/rho_H20*w_g_target+1))) # size of the grain of cement (µm)
-    
+
 if IC_mode=='Spheres_Seed' :
     # Description of the grain (size distribution)
     PSD_mode = 'Given' # Uniform or Given
@@ -53,11 +53,11 @@ if IC_mode=='Spheres_Seed' :
     if PSD_mode == 'Given':
         L_R      = [ 2.5,  3.5,  4.5,  5.5,  6.5,  7.5,  8.5,  9.5,  10.5] # list of radius of the grain (µm)
         L_perc_R = [0.66, 0.19, 0.07, 0.03, 0.02, 0.01, 0.01, 0.01] # list of percentage (-)
-    w_g_target = 0.5 # mass ratio water/cement targetted
+    w_g_target = 0.3 # mass ratio water/cement targetted
     rho_H20 = 1000 # density water (kg.m-3)
     rho_g = 3200 # density cement (kg.m-3)
-    factor_int = 2 # additional distance (considering interface overlapping)
-    n_seed = 10 # number of seed
+    factor_int = 1 # additional distance (considering interface overlapping)
+    n_seed = 30 # number of seed
     n_steps = 10 # number of step in increasing the radius
 
 if IC_mode=='Powder_Seed':
@@ -76,23 +76,23 @@ w_int = d_mesh*n_int # the interface thickness
 kappa = Energy_barrier*w_int*w_int/9.86 # gradient coefficient for free energies phi/psi
 L = 1 # Mobility value used for free energies (phi/psi) (s-1)
 noise = True # apply noise on the CSH phase variable
-    
+
 # Reaction C3S (psi) -> c
 C_eq_psi = 1 # equilibrium constant for the reaction
 a_psi = (3+1)*2.344 # conversion term (psi -> c)
 chi_c_psi = 0.1*Energy_barrier # coefficient used to tilt the free energies psi (dependent on the c value)
 
-# Reaction c -> CSH (phi) 
+# Reaction c -> CSH (phi)
 C_eq_phi = 0 # equilibrium constant for the reaction
 a_phi = 3 # conversion term (phi -> c)
 chi_c_phi = 0.1*Energy_barrier # coefficient used to tilt the free energies phi (dependent on the c value)
 
 # description of the solute diffusion
-k_c_0 = 50 # coefficient of solute diffusion (µm2.s-1)
+k_c_0 = 1 # coefficient of solute diffusion (µm2.s-1)
 k_c_exp = 6 # decay of the solute diffusion because of the gel (in the exp term)
 
 # computing information
-n_proc = 4 # number of processor used
+n_proc = 5 # number of processor used
 crit_res = 5*1e-2 # convergence criteria on residual
 reduce_memory_usage = True # reduce memory usage
 n_vtk_max = 30 # if True, number maximum of vtks (+ 1)
@@ -100,7 +100,7 @@ PostProccess = True # Post proccessing
 
 # PF time parameters
 dt_PF = 0.15  # time step
-n_ite_max = 500 # maximum number of iteration
+n_ite_max = 1500 # maximum number of iteration
 
 # compute performances
 tic = time.perf_counter()
@@ -125,7 +125,7 @@ dict_user = {
 'a_psi': a_psi,
 'chi_c_psi': chi_c_psi,
 'C_eq_phi': C_eq_phi,
-'a_phi': a_phi, 
+'a_phi': a_phi,
 'chi_c_phi': chi_c_phi,
 'k_c_0': k_c_0,
 'k_c_exp': k_c_exp,
@@ -240,7 +240,7 @@ print('\nEnd of the simulation')
 #-------------------------------------------------------------------------------
 
 # parameters for post proccess
-max_ite = 20 # + 1
+max_ite = 30 # + 1
 if dict_user['reduce_memory_usage']:
     max_ite = min(max_ite, dict_user['n_vtk_max'])
 n_plot = 4 # + 1
@@ -252,7 +252,7 @@ Poisson_C3S = 0.3 # -
 # water (elastic)
 YoungModulus_H2O = YoungModulus_C3S/1000 # Pa
 Poisson_H2O = 0.3 # -
-# CSH 
+# CSH
 # elastic or visco-elastic
 CSH_type = 'elastic'
 if CSH_type == 'elastic':
@@ -268,11 +268,11 @@ n_mesh_pp = dict_user['n_mesh'] # number of element in one direction of the mesh
                                 # the number of nodes is n_mesh+1
 
 # computing information
-n_proc_pp = 4 # number of processor used
+n_proc_pp = 8 # number of processor used
 crit_res_pp = 1e-4 # convergence criteria on residual
 
 # loading
-L_loading = ['pull', 'shear'] # pull, shear 
+L_loading = ['pull', 'shear'] # pull, shear
 speed_load = 0.2*dict_user['dim_domain'] # simulation time is 1 s
 
 # time parameters
@@ -330,7 +330,7 @@ time_pp = []
 c_pp = []
 phi_pp = []
 psi_pp = []
-sum_mat_pp = [] 
+sum_mat_pp = []
 hyd_pp = []
 
 # iterate on lines
@@ -361,9 +361,9 @@ ax1.plot(time_pp, psi_pp, label='C3S', linewidth=6)
 ax1.legend(fontsize=20)
 ax1.set_xlabel('time (s)', fontsize=25)
 ax1.set_ylabel('mean values (-)', fontsize=25)
-ax1.tick_params(axis='both', labelsize=20, width=3, length=3) 
+ax1.tick_params(axis='both', labelsize=20, width=3, length=3)
 fig.tight_layout()
-fig.savefig('png/evol_time_mat.png')    
+fig.savefig('png/evol_time_mat.png')
 plt.close(fig)
 
 # plot time-total mass
@@ -371,9 +371,9 @@ fig, ax1 = plt.subplots(1,1,figsize=(16,9))
 ax1.plot(time_pp, sum_mat_pp, linewidth=6)
 ax1.set_xlabel('time (s)', fontsize=25)
 ax1.set_ylabel('total mass (-)', fontsize=25)
-ax1.tick_params(axis='both', labelsize=20, width=3, length=3) 
+ax1.tick_params(axis='both', labelsize=20, width=3, length=3)
 fig.tight_layout()
-fig.savefig('png/evol_time_mass.png')    
+fig.savefig('png/evol_time_mass.png')
 plt.close(fig)
 # output
 print('conservation of the mass:')
@@ -385,9 +385,9 @@ fig, ax1 = plt.subplots(1,1,figsize=(16,9))
 ax1.plot(time_pp, hyd_pp, linewidth=6)
 ax1.set_xlabel('time (s)', fontsize=25)
 ax1.set_ylabel('hydration (%)', fontsize=25)
-ax1.tick_params(axis='both', labelsize=20, width=3, length=3) 
+ax1.tick_params(axis='both', labelsize=20, width=3, length=3)
 fig.tight_layout()
-fig.savefig('png/evol_time_hyd.png')    
+fig.savefig('png/evol_time_hyd.png')
 plt.close(fig)
 
 # plot log(time)-hydration
@@ -396,9 +396,9 @@ ax1.plot(time_pp, hyd_pp, linewidth=6)
 ax1.set_xlabel('time (s)', fontsize=25)
 ax1.set_xscale('log')
 ax1.set_ylabel('hydration (%)', fontsize=25)
-ax1.tick_params(axis='both', labelsize=20, width=3, length=3) 
+ax1.tick_params(axis='both', labelsize=20, width=3, length=3)
 fig.tight_layout()
-fig.savefig('png/evol_log_time_hyd.png')    
+fig.savefig('png/evol_log_time_hyd.png')
 plt.close(fig)
 
 # pp macro porosity
@@ -414,17 +414,17 @@ ax1.plot([hyd_pp[0], hyd_pp[-1]], [0.910, 0.910], color='k', linestyle='dashed')
 ax1.set_xlabel('hydration (%)', fontsize=25)
 ax1.set_ylabel('micro porosity (-)', fontsize=25)
 ax1.set_title('gel')
-ax1.tick_params(axis='both', labelsize=20, width=3, length=3) 
+ax1.tick_params(axis='both', labelsize=20, width=3, length=3)
 # macro porosity
 ax2.plot(hyd_pp, macro_porosity, linewidth=6)
 ax2.plot([hyd_pp[0], hyd_pp[-1]], [0.931, 0.931], color='k', linestyle='dashed')
 ax2.set_xlabel('hydration (%)', fontsize=25)
 ax2.set_ylabel('macro porosity (-)', fontsize=25)
 ax2.set_title('gel + source')
-ax2.tick_params(axis='both', labelsize=20, width=3, length=3) 
+ax2.tick_params(axis='both', labelsize=20, width=3, length=3)
 # close
 fig.tight_layout()
-fig.savefig('png/evol_hyd_micro_macro_porosities.png')    
+fig.savefig('png/evol_hyd_micro_macro_porosities.png')
 plt.close(fig)
 
 #-------------------------------------------------------------------------------
@@ -460,9 +460,9 @@ if max(hyd_pp) > 50:
         ax1.legend(fontsize=20)
         ax1.set_xlabel(r'time / time$_{50}$ (-)', fontsize=25)
         ax1.set_ylabel('hydration (%)', fontsize=25)
-        ax1.tick_params(axis='both', labelsize=20, width=3, length=3) 
+        ax1.tick_params(axis='both', labelsize=20, width=3, length=3)
         fig.tight_layout()
-        #fig.savefig('png/evol_time_hyd_vs_exp/nguyen.png')    
+        #fig.savefig('png/evol_time_hyd_vs_exp/nguyen.png')
         plt.close(fig)
 
     if w_g_target == 0.42:
@@ -477,9 +477,9 @@ if max(hyd_pp) > 50:
         ax1.legend(fontsize=20)
         ax1.set_xlabel(r'time / time$_{50}$ (-)', fontsize=25)
         ax1.set_ylabel('hydration (%)', fontsize=25)
-        ax1.tick_params(axis='both', labelsize=20, width=3, length=3) 
+        ax1.tick_params(axis='both', labelsize=20, width=3, length=3)
         fig.tight_layout()
-        fig.savefig('png/evol_time_hyd_vs_exp/petersen_a.png')    
+        fig.savefig('png/evol_time_hyd_vs_exp/petersen_a.png')
         plt.close(fig)
 
         # hydration from Petersen, 2018b (w/c=0.42)
@@ -492,9 +492,9 @@ if max(hyd_pp) > 50:
         ax1.legend(fontsize=20)
         ax1.set_xlabel(r'time / time$_{50}$ (-)', fontsize=25)
         ax1.set_ylabel('hydration (%)', fontsize=25)
-        ax1.tick_params(axis='both', labelsize=20, width=3, length=3) 
+        ax1.tick_params(axis='both', labelsize=20, width=3, length=3)
         fig.tight_layout()
-        fig.savefig('png/evol_time_hyd_vs_exp/petersen_b.png')    
+        fig.savefig('png/evol_time_hyd_vs_exp/petersen_b.png')
         plt.close(fig)
 
     if w_g_target == 0.3:
@@ -511,9 +511,9 @@ if max(hyd_pp) > 50:
         ax1.legend(fontsize=20)
         ax1.set_xlabel(r'time / time$_{50}$ (-)', fontsize=25)
         ax1.set_ylabel('hydration (%)', fontsize=25)
-        ax1.tick_params(axis='both', labelsize=20, width=3, length=3) 
+        ax1.tick_params(axis='both', labelsize=20, width=3, length=3)
         fig.tight_layout()
-        fig.savefig('png/evol_time_hyd_vs_exp/nguyen.png')    
+        fig.savefig('png/evol_time_hyd_vs_exp/nguyen.png')
         plt.close(fig)
 
 #-------------------------------------------------------------------------------
@@ -533,7 +533,7 @@ if dict_user['PostProccess']:
     check_mesh_database(dict_user, dict_sample, dict_pp)
     # read
     Read_data(dict_pp, dict_sample, dict_user)
-    # rebuild 
+    # rebuild
     Rebuild_map(dict_pp, dict_sample, dict_user)
     # Save database
     #save_mesh_database(dict_user, dict_sample, dict_pp)
@@ -552,14 +552,21 @@ if dict_user['PostProccess']:
     #Compute_DegreeHydration(dict_pp, dict_sample, dict_user)
     #Compute_Mphi_Mpsi_Mc(dict_pp, dict_sample, dict_user)
     #Compute_Sphi_Spsi_Sc(dict_pp, dict_sample, dict_user)
-    
+
     # work not used
     #Compute_ChordLenght_Density_Func(dict_pp, dict_sample, dict_user)
     #Compute_ChordLenght_PoreSpy(dict_pp, dict_sample, dict_user)
-    
+
     # work not available
     #Compute_PoreSize_Func(dict_pp, dict_sample, dict_user)
     #Compute_PoreSize_PoreSpy(dict_pp, dict_sample, dict_user)
+
+    # clean data
+    del dict_pp['L_L_psi'], dict_pp['L_L_phi'], dict_pp['L_L_c']
+    del dict_pp['L_L_i_XYZ_not_used'], dict_pp['L_XYZ']
+    del dict_pp['L_M_phi'], dict_pp['L_M_phi_b']
+    del dict_pp['L_M_psi'], dict_pp['L_M_psi_b']
+    del dict_pp['L_M_matter_b']
 
 #-------------------------------------------------------------------------------
 # Close
@@ -581,4 +588,3 @@ pickle.dump(dict_pp, open('dict/dict_pp.dict','wb'))
 # delete file
 if dict_user['reduce_memory_usage']:
     shutil.rmtree('csv')
-

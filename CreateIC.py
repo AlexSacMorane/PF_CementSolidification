@@ -26,7 +26,7 @@ def check_overlap(L_radius_grains, L_pos_grains, L_radius_grains_virtual, L_pos_
         # radius of grains
         radius_i = L_radius_grains[i_g]
         # position of grains
-        pos_i = L_pos_grains[i_g]    
+        pos_i = L_pos_grains[i_g]
         for j_g in range(i_g+1, len(L_radius_grains)):
             # radius of grains
             radius_j = L_radius_grains[j_g]
@@ -42,7 +42,7 @@ def check_overlap(L_radius_grains, L_pos_grains, L_radius_grains_virtual, L_pos_
         # radius of grains
         radius_i = L_radius_grains[i_g]
         # position of grains
-        pos_i = L_pos_grains[i_g]   
+        pos_i = L_pos_grains[i_g]
         for j_g in range(len(L_radius_grains_virtual)):
             # radius of grains
             radius_j = L_radius_grains_virtual[j_g]
@@ -70,25 +70,25 @@ def compute_virtual(dict_user, L_pos_grains, L_radius_grains_step):
         per_x_m = False
         per_y_p = False
         per_y_m = False
-        # - x limit 
+        # - x limit
         if L_pos_grains[i_grain][0] < -dict_user['dim_domain']/2 + L_radius_grains_step[i_grain]:
             L_pos_grains_virtual.append(L_pos_grains[i_grain] + np.array([ dict_user['dim_domain'], 0]))
             L_radius_grains_virtual.append(L_radius_grains_step[i_grain])
             L_i_grain_virtual.append(i_grain)
             per_x_m = True
-        # + x limit 
+        # + x limit
         if dict_user['dim_domain']/2 - L_radius_grains_step[i_grain] < L_pos_grains[i_grain][0]:
             L_pos_grains_virtual.append(L_pos_grains[i_grain] + np.array([-dict_user['dim_domain'], 0]))
             L_radius_grains_virtual.append(L_radius_grains_step[i_grain])
             L_i_grain_virtual.append(i_grain)
             per_x_p = True
-        # - y limit 
+        # - y limit
         if L_pos_grains[i_grain][1] < -dict_user['dim_domain']/2 + L_radius_grains_step[i_grain]:
             L_pos_grains_virtual.append(L_pos_grains[i_grain] + np.array([0,  dict_user['dim_domain']]))
             L_radius_grains_virtual.append(L_radius_grains_step[i_grain])
             L_i_grain_virtual.append(i_grain)
             per_y_m = True
-        # + y limit 
+        # + y limit
         if dict_user['dim_domain']/2 - L_radius_grains_step[i_grain] < L_pos_grains[i_grain][1]:
             L_pos_grains_virtual.append(L_pos_grains[i_grain] + np.array([0, -dict_user['dim_domain']]))
             L_radius_grains_virtual.append(L_radius_grains_step[i_grain])
@@ -114,7 +114,7 @@ def compute_virtual(dict_user, L_pos_grains, L_radius_grains_step):
             L_pos_grains_virtual.append(L_pos_grains[i_grain] + np.array([ -dict_user['dim_domain'], -dict_user['dim_domain']]))
             L_radius_grains_virtual.append(L_radius_grains_step[i_grain])
             L_i_grain_virtual.append(i_grain)
-    
+
     return L_pos_grains_virtual, L_radius_grains_virtual, L_i_grain_virtual
 
 #-------------------------------------------------------------------------------
@@ -173,7 +173,7 @@ def Insert_One_Grain_Seed(dict_sample, dict_user):
     n_seed = dict_user['n_seed']
     for i_seed in range(n_seed):
         i_try = 0
-        seed_created = False 
+        seed_created = False
         while not seed_created and i_try < 100:
             i_try = i_try + 1
             # generate a seed
@@ -183,7 +183,7 @@ def Insert_One_Grain_Seed(dict_sample, dict_user):
 
             # verify the node is not in a cement source
             if M_psi[-1-i_y_seed, i_x_seed] != 1:
-                seed_created = True 
+                seed_created = True
                 # generate the seed
                 r_seed = 1.5*dict_user['w_int']
                 # compute the number of node (depending on the radius)
@@ -539,7 +539,7 @@ def Insert_Grains_Seed(dict_sample, dict_user):
         m_H20_m_cement = (Surface_water*dict_user['rho_water'])/(Surface_grain*dict_user['rho_g'])
         # output
         print('Compute IC:',round(m_H20_m_cement,2),'/',dict_user['w_g_target'],'targetted')
-    
+
     # compute the configuration
     for i_steps in range(1, dict_user['n_steps']+1):
         print('Increase radius step',i_steps,'/',dict_user['n_steps'])
@@ -551,7 +551,7 @@ def Insert_Grains_Seed(dict_sample, dict_user):
 
         # compute virtual grain due to periodic condition
         L_pos_grains_virtual, L_radius_grains_virtual, L_i_grain_virtual = compute_virtual(dict_user, L_pos_grains, L_radius_grains_step)
-        
+
         # check if there is no overlap
         overlap, L_overlap, L_overlap_virtual = check_overlap(L_radius_grains_step, L_pos_grains,\
                                                               L_radius_grains_virtual, L_pos_grains_virtual, L_i_grain_virtual,\
@@ -589,26 +589,26 @@ def Insert_Grains_Seed(dict_sample, dict_user):
                 u_ij = u_ij/np.linalg.norm(u_ij)
                 # move grain
                 L_pos_grains[i_g] = L_pos_grains_virtual_old[j_g_virtual] - u_ij*(r_i+r_j+2*dict_user['factor_int'])
-            
+
             # check position of grain after displacement
             for i_grain in range(len(L_pos_grains)):
-                # - x limit 
+                # - x limit
                 if L_pos_grains[i_grain][0] < -dict_user['dim_domain']/2 - L_radius_grains_step[i_grain]:
                     L_pos_grains[i_grain] = L_pos_grains[i_grain] + np.array([ dict_user['dim_domain'], 0])
-                # + x limit 
+                # + x limit
                 if dict_user['dim_domain']/2 + L_radius_grains_step[i_grain] < L_pos_grains[i_grain][0]:
                     L_pos_grains[i_grain] = L_pos_grains[i_grain] + np.array([-dict_user['dim_domain'], 0])
-                # - y limit 
+                # - y limit
                 if L_pos_grains[i_grain][1] < -dict_user['dim_domain']/2 - L_radius_grains_step[i_grain]:
                     L_pos_grains[i_grain] = L_pos_grains[i_grain] + np.array([0,  dict_user['dim_domain']])
-                # + y limit 
+                # + y limit
                 if dict_user['dim_domain']/2 + L_radius_grains_step[i_grain] < L_pos_grains[i_grain][1]:
                     L_pos_grains[i_grain] = L_pos_grains[i_grain] + np.array([0, -dict_user['dim_domain']])
-                    
+
             # compute virtual grain due to periodic condition
             L_pos_grains_virtual, L_radius_grains_virtual, L_i_grain_virtual = compute_virtual(dict_user, L_pos_grains, L_radius_grains_step)
 
-                
+
             # look if overlap exists
             overlap, L_overlap, L_overlap_virtual = check_overlap(L_radius_grains_step, L_pos_grains,\
                                                                     L_radius_grains_virtual, L_pos_grains_virtual, L_i_grain_virtual,\
@@ -644,7 +644,7 @@ def Insert_Grains_Seed(dict_sample, dict_user):
                         M_psi[-1-i_y, i_x] = 1
                     elif distance >= r_grain:
                         M_psi[-1-i_y, i_x] = 0
-    
+
     # compute surface grains and water
     Surface_grain = np.sum(M_psi)/M_psi.size*dict_user['dim_domain']*dict_user['dim_domain']
     Surface_water = dict_user['dim_domain']*dict_user['dim_domain'] - Surface_grain
@@ -660,33 +660,39 @@ def Insert_Grains_Seed(dict_sample, dict_user):
     n_seed = dict_user['n_seed']
     for i_seed in range(n_seed):
         i_try = 0
-        seed_created = False 
-        while not seed_created and i_try < 100:
+        seed_created = False
+        while not seed_created and i_try < 500:
             i_try = i_try + 1
             # generate a seed
             i_x_seed = random.randint(0, len(L_x)-1)
             i_y_seed = random.randint(0, len(L_y)-1)
             center_seed = np.array([L_x[i_x_seed], L_y[i_y_seed]])
+            r_seed = dict_user['w_int']+dict_user['d_mesh']
 
             # verify the node is not in a cement source
+            # and not far from a source
             if M_psi[-1-i_y_seed, i_x_seed] != 1:
-                seed_created = True 
-                # generate the seed
-                r_seed = dict_user['w_int']+dict_user['d_mesh']
-                # compute the number of node (depending on the radius)
-                n_nodes = 2*int(r_seed/(L_x[1]-L_x[0]))
-                for i_x in range(max(0,i_x_seed-n_nodes),min(i_x_seed+n_nodes+1,len(L_x))):
-                    for i_y in range(max(0,i_y_seed-n_nodes),min(i_y_seed+n_nodes+1,len(L_y))):
-                        x = L_x[i_x]
-                        y = L_y[i_y]
-                        Point = np.array([x, y])
-                        distance = np.linalg.norm(Point-center_seed)
-                        # Update map psi
-                        if M_phi[-1-i_y, i_x] == 0 : # do not erase data already written
-                            if distance <= r_seed:
-                                M_phi[-1-i_y, i_x] = 1
-                            elif distance >= r_seed:
-                                M_phi[-1-i_y, i_x] = 0
+                close_seed = False
+                for i_grain in range(len(L_pos_grains_real_virtual)):
+                    d_seed_grain = np.linalg.norm(center_seed-L_pos_grains_real_virtual[i_grain])
+                    if d_seed_grain < L_radius_grains_real_virtual[i_grain]+2*r_seed:
+                        close_seed = True
+                if close_seed:
+                    seed_created = True
+                    # compute the number of node (depending on the radius)
+                    n_nodes = 2*int(r_seed/(L_x[1]-L_x[0]))
+                    for i_x in range(max(0,i_x_seed-n_nodes),min(i_x_seed+n_nodes+1,len(L_x))):
+                        for i_y in range(max(0,i_y_seed-n_nodes),min(i_y_seed+n_nodes+1,len(L_y))):
+                            x = L_x[i_x]
+                            y = L_y[i_y]
+                            Point = np.array([x, y])
+                            distance = np.linalg.norm(Point-center_seed)
+                            # Update map psi
+                            if M_phi[-1-i_y, i_x] == 0 : # do not erase data already written
+                                if distance <= r_seed:
+                                    M_phi[-1-i_y, i_x] = 1
+                                elif distance >= r_seed:
+                                    M_phi[-1-i_y, i_x] = 0
 
     # print psi/phi map
     M_phi_psi = M_psi + 2*M_phi
@@ -856,7 +862,7 @@ def Insert_Powder_Seed(dict_sample, dict_user):
     n_seed = dict_user['n_seed']
     for i_seed in range(n_seed):
         i_try = 0
-        seed_created = False 
+        seed_created = False
         while not seed_created and i_try < 100:
             i_try = i_try + 1
             # generate a seed
@@ -866,7 +872,7 @@ def Insert_Powder_Seed(dict_sample, dict_user):
 
             # verify the node is not in a cement source
             if M_psi[-1-i_y_seed, i_x_seed] != 1:
-                seed_created = True 
+                seed_created = True
                 # generate the seed
                 r_seed = 1.3*dict_user['w_int']
                 # compute the number of node (depending on the radius)
@@ -994,4 +1000,3 @@ def Insert_Powder_Seed(dict_sample, dict_user):
     file_to_write_psi.close()
     file_to_write_phi.close()
     file_to_write_c.close()
-

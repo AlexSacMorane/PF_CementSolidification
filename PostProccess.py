@@ -53,7 +53,8 @@ def Read_data(dict_pp, dict_sample, dict_user):
     i_pp = 0
 
     # iterate on the time
-    for iteration in range(dict_pp['last_j']+1):
+    #for iteration in range(dict_pp['last_j']+1):
+    for iteration in [dict_pp['last_j']]:
         if iteration >= f_pp*i_pp:
             print(iteration+1,'/',dict_pp['last_j']+1)
             iteration_str = index_to_str(iteration)
@@ -253,7 +254,7 @@ def Rebuild_map(dict_pp, dict_sample, dict_user):
             # extract time and hydration
             L_time_pp_extracted.append(dict_pp['L_time_pp_extracted'][iteration])
             L_hyd_pp_extracted.append(dict_pp['L_hyd_pp_extracted'][iteration])
-            
+
             # save and next iteration
             L_M_phi.append(M_phi)
             L_M_phi_b.append(M_phi_b)
@@ -286,8 +287,8 @@ def Compute_SpecificSurf(dict_pp, dict_user):
     # iterate on the time
     for iteration in range(len(dict_pp['L_M_phi'])):
         print(iteration+1,'/',len(dict_pp['L_M_phi']))
-        
-        # phi        
+
+        # phi
         # Compute the gradient
         grad_x_cst, grad_y_cst = np.gradient(dict_pp['L_M_phi'][iteration],dict_user['d_mesh'],dict_user['d_mesh'])
         # compute the norm of the gradient
@@ -295,7 +296,7 @@ def Compute_SpecificSurf(dict_pp, dict_user):
         # Compute mean
         L_spec_surf_phi.append(np.mean(norm_grad))
 
-        # psi        
+        # psi
         # Compute the gradient
         grad_x_cst, grad_y_cst = np.gradient(dict_pp['L_M_psi'][iteration],dict_user['d_mesh'],dict_user['d_mesh'])
         # compute the norm of the gradient
@@ -318,7 +319,7 @@ def Compute_SpecificSurf(dict_pp, dict_user):
     # close
     fig.savefig('png/evol_time_specific_surfs.png')
     plt.close(fig)
-    
+
     fig, (ax1,ax2) = plt.subplots(1,2,figsize=(16,9))
     # phi
     ax1.plot(dict_pp['L_hyd_pp_extracted'], L_spec_surf_phi)
@@ -487,11 +488,11 @@ def Compute_ChordLenght_Density_Func(dict_pp, dict_sample, dict_user):
             # compute the probability
             if n_try_pore != 0:
                 L_cldf_pore.append(n_in_pore/n_try_pore)
-            else : 
+            else :
                 L_cldf_pore.append(0)
-            if n_try_solid != 0:       
+            if n_try_solid != 0:
                 L_cldf_solid.append(n_in_solid/n_try_solid)
-            else : 
+            else :
                 L_cldf_solid.append(0)
 
         # normalyze the cldf
@@ -617,7 +618,7 @@ def Compute_ChordLenght_Density_Func(dict_pp, dict_sample, dict_user):
     plt.close(fig)
 
 #-------------------------------------------------------------------------------
-    
+
 def Compute_ChordLenght_PoreSpy(dict_pp, dict_sample, dict_user):
     '''
     Compute the chord length distribution function from the module PoreSpy.
@@ -639,12 +640,12 @@ def Compute_ChordLenght_PoreSpy(dict_pp, dict_sample, dict_user):
     # Read mesh
     L_x = dict_sample['L_x']
     L_y = dict_sample['L_y']
-    
+
     # iterate on the time
     for iteration in range(len(dict_pp['L_L_psi'])):
         if iteration >= f_pp*i_pp:
             print(iteration+1,'/',len(dict_pp['L_L_psi']))
-            
+
             # Rebuild phi array binary (threshold at 0.5)
             M_phi = np.array(np.zeros((dict_user['n_mesh'],dict_user['n_mesh'])))
             # Rebuild psi array binary (threshold at 0.5)
@@ -673,7 +674,7 @@ def Compute_ChordLenght_PoreSpy(dict_pp, dict_sample, dict_user):
                     M_matter[-1-i_y,i_x] = True
                 else :
                     M_matter[-1-i_y,i_x] = False
-            
+
             i_pp = i_pp + 1
 
             # plot
@@ -870,7 +871,7 @@ def Compute_Corr_Func(dict_pp, dict_user, dict_sample):
     print('\nCompute the correlation function\n')
     Create_Folder('png/cf')
     Create_Folder('png/cf_n')
-    
+
     # parameters
     n_correlation = 5
     dist_max = 30
@@ -888,7 +889,7 @@ def Compute_Corr_Func(dict_pp, dict_user, dict_sample):
     # Read mesh
     L_x = dict_sample['L_x']
     L_y = dict_sample['L_y']
-    
+
     # iterate on the time
     for iteration in range(len(dict_pp['L_L_psi'])):
         print(iteration+1,'/',len(dict_pp['L_L_psi']))
@@ -933,7 +934,7 @@ def Compute_Corr_Func(dict_pp, dict_user, dict_sample):
                 # compute correlation
                 s_corr = Corr_Func(M_phi, i, i)
                 L_correlation.append(s_corr)
-            # save              
+            # save
             L_L_correlation_phi.append(L_correlation)
 
             # define the correlation function for psi
@@ -953,10 +954,10 @@ def Compute_Corr_Func(dict_pp, dict_user, dict_sample):
                 # compute correlation
                 s_corr = Corr_Func(M_psi, i, i)
                 L_correlation.append(s_corr)
-            # save              
+            # save
             L_L_correlation_psi.append(L_correlation)
 
-            # next 
+            # next
             i_pp = i_pp + 1
 
     # plots
@@ -1006,7 +1007,7 @@ def Compute_Corr_Func(dict_pp, dict_user, dict_sample):
     fig.savefig('png/cf_n/Comparison.png')
     plt.close(fig)
 
-    # save 
+    # save
     dict_pp['L_dist_corr'] = L_distance
     dict_pp['L_L_correlation_phi'] = L_L_correlation_phi
     dict_pp['L_L_correlation_psi'] = L_L_correlation_psi
@@ -1027,14 +1028,14 @@ def Corr_Func(map, dx, dy):
     return sum
 
 #-------------------------------------------------------------------------------
-    
+
 def Compute_Corr_PoreSpy(dict_pp, dict_user):
     '''
     Compute the two point correlation function from the module PoreSpy.
-    ''' 
+    '''
     print('\nCompute the correlation function\n')
     #Create_Folder('png/cf_ps')
-    
+
     # initialization
     L_distance_phi = []
     L_proba_phi = []
@@ -1050,7 +1051,7 @@ def Compute_Corr_PoreSpy(dict_pp, dict_user):
         f_pp = 1
     # post proccess index
     i_pp = 0
-    
+
     # prepare figures
     fig_comp_phi, (ax1_comp_phi) = plt.subplots(1, 1, figsize=[16, 9])
     fig_comp_psi, (ax1_comp_psi) = plt.subplots(1, 1, figsize=[16, 9])
@@ -1059,7 +1060,7 @@ def Compute_Corr_PoreSpy(dict_pp, dict_user):
     # iterate on the time
     for iteration in range(len(dict_pp['L_M_phi_b'])):
         print(iteration+1,'/',len(dict_pp['L_M_phi_b']))
-            
+
         # plot phi
         data = porespy.metrics.two_point_correlation(dict_pp['L_M_phi_b'][iteration])
         # pp data
@@ -1073,7 +1074,7 @@ def Compute_Corr_PoreSpy(dict_pp, dict_user):
         plt.close(fig)
         if iteration >= i_pp*f_pp:
             ax1_comp_phi.plot(data.distance, data.probability, label='t='+str(dict_pp['L_time_pp_extracted'][iteration])+' / h='+str(dict_pp['L_hyd_pp_extracted'][iteration]))
-        # save 
+        # save
         L_distance_phi.append(data.distance)
         L_proba_phi.append(data.probability)
 
@@ -1089,7 +1090,7 @@ def Compute_Corr_PoreSpy(dict_pp, dict_user):
         plt.close(fig)
         if iteration >= i_pp*f_pp:
             ax1_comp_psi.plot(data.distance, data.probability, label='t='+str(dict_pp['L_time_pp_extracted'][iteration])+' / h='+str(dict_pp['L_hyd_pp_extracted'][iteration]))
-        # save 
+        # save
         L_distance_psi.append(data.distance)
         L_proba_psi.append(data.probability)
 
@@ -1106,10 +1107,10 @@ def Compute_Corr_PoreSpy(dict_pp, dict_user):
         if iteration >= i_pp*f_pp:
             ax1_comp_matter.plot(data.distance, data.probability, label='t='+str(dict_pp['L_time_pp_extracted'][iteration])+' / h='+str(dict_pp['L_hyd_pp_extracted'][iteration]))
             i_pp = i_pp + 1
-        # save 
+        # save
         L_distance_matter.append(data.distance)
         L_proba_matter.append(data.probability)
-    
+
     # close plot phi
     ax1_comp_phi.legend()
     ax1_comp_phi.set_xlabel(r'distance ($\mu m$)')
@@ -1154,7 +1155,7 @@ def microstructure_segmentation(dict_pp):
     # parameters
     L_num_features = []
     L_mechanical_continuity = []
-    
+
     # iterate on the time
     for iteration in range(len(dict_pp['L_M_matter_b'])):
         print(iteration+1,'/',len(dict_pp['L_M_matter_b']))
@@ -1165,7 +1166,8 @@ def microstructure_segmentation(dict_pp):
 
         # plot
         fig, (ax1) = plt.subplots(1,1,figsize=(16,9))
-        viridis_qualitative = cm.get_cmap('viridis', num_features+1)
+        #viridis_qualitative = cm.get_cmap('viridis', num_features+1)
+        viridis_qualitative = plt.get_cmap('viridis', num_features+1)
         ax1.imshow(labelled_image,cmap=viridis_qualitative)
         fig.savefig('png/seg/labelled_'+str(iteration)+'.png')
         plt.close(fig)
@@ -1226,7 +1228,7 @@ def microstructure_segmentation(dict_pp):
     dict_pp['L_mechanical_continuity'] = L_mechanical_continuity
 
 #-------------------------------------------------------------------------------
-    
+
 def Compute_Perimeter_Skimage(dict_pp, dict_user):
     '''
     Compute the perimeter from the module skimage.
@@ -1246,7 +1248,7 @@ def Compute_Perimeter_Skimage(dict_pp, dict_user):
         p_phi = skimage.measure.perimeter(dict_pp['L_M_phi_b'][iteration], neighborhood=4)
         p_psi = skimage.measure.perimeter(dict_pp['L_M_psi_b'][iteration], neighborhood=4)
         p_matter = skimage.measure.perimeter(dict_pp['L_M_matter_b'][iteration], neighborhood=4)
-        # save 
+        # save
         L_perimeter_phi.append(p_phi*dict_user['d_mesh'])
         L_perimeter_psi.append(p_psi*dict_user['d_mesh'])
         L_perimeter_matter.append(p_matter*dict_user['d_mesh'])
@@ -1271,7 +1273,7 @@ def Compute_Perimeter_Skimage(dict_pp, dict_user):
     # close
     fig.savefig('png/evol_time_perimeters.png')
     plt.close(fig)
-    
+
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=[16, 9])
     # phi
     ax1.plot(dict_pp['L_hyd_pp_extracted'], L_perimeter_phi)
@@ -1298,7 +1300,7 @@ def Compute_Perimeter_Skimage(dict_pp, dict_user):
     dict_pp['L_perimeter_matter'] = L_perimeter_matter
 
 #-------------------------------------------------------------------------------
-    
+
 def Compute_Euler_Skimage(dict_pp, dict_user):
     '''
     Compute the euler number from the module skimage.
@@ -1313,12 +1315,12 @@ def Compute_Euler_Skimage(dict_pp, dict_user):
     # iterate on the time
     for iteration in range(len(dict_pp['L_M_phi_b'])):
         print(iteration+1,'/',len(dict_pp['L_M_phi_b']))
-        
+
         # compute perimeter
         e_phi = skimage.measure.euler_number(dict_pp['L_M_phi_b'][iteration])
         e_psi = skimage.measure.euler_number(dict_pp['L_M_psi_b'][iteration])
         e_matter = skimage.measure.euler_number(dict_pp['L_M_matter_b'][iteration])
-        # save 
+        # save
         L_euler_phi.append(e_phi)
         L_euler_psi.append(e_psi)
         L_euler_matter.append(e_matter)
@@ -1343,7 +1345,7 @@ def Compute_Euler_Skimage(dict_pp, dict_user):
     # close
     fig.savefig('png/evol_time_euler_numbers.png')
     plt.close(fig)
-    
+
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=[16, 9])
     # phi
     ax1.plot(dict_pp['L_hyd_pp_extracted'], L_euler_phi)
@@ -1368,7 +1370,7 @@ def Compute_Euler_Skimage(dict_pp, dict_user):
     dict_pp['L_euler_phi'] = L_euler_phi
     dict_pp['L_euler_psi'] = L_euler_psi
     dict_pp['L_euler_matter'] = L_euler_matter
-    
+
 #-------------------------------------------------------------------------------
 # Not used
 #-------------------------------------------------------------------------------
@@ -1587,7 +1589,7 @@ def Compute_Degreehydration(dict_pp, dict_sample, dict_user):
 # Not working
 #-------------------------------------------------------------------------------
 
-  
+
 def Compute_PoreSize_PoreSpy(dict_pp, dict_sample, dict_user):
     '''
     Compute the pore size distribution function from the module PoreSpy.
@@ -1609,12 +1611,12 @@ def Compute_PoreSize_PoreSpy(dict_pp, dict_sample, dict_user):
     # Read mesh
     L_x = dict_sample['L_x']
     L_y = dict_sample['L_y']
-    
+
     # iterate on the time
     for iteration in range(len(dict_pp['L_L_psi'])):
         if iteration >= f_pp*i_pp:
             print(iteration+1,'/',len(dict_pp['L_L_psi']))
-            
+
             # Rebuild phi array binary (threshold at 0.5)
             M_phi = np.array(np.zeros((dict_user['n_mesh'],dict_user['n_mesh'])))
             # Rebuild psi array binary (threshold at 0.5)
@@ -1643,7 +1645,7 @@ def Compute_PoreSize_PoreSpy(dict_pp, dict_sample, dict_user):
                     M_matter[-1-i_y,i_x] = True
                 else :
                     M_matter[-1-i_y,i_x] = False
-            
+
             i_pp = i_pp + 1
 
             # plot
@@ -1664,7 +1666,7 @@ def Compute_PoreSize_PoreSpy(dict_pp, dict_sample, dict_user):
             fig.savefig('png/psf/phi_'+str(iteration)+'.png')
             plt.close(fig)
 
-            
+
             data = porespy.metrics.pore_size_distribution(im=M_psi)
             fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=[10, 4])
             ax1.plot(data.bin_centers,data.pdf)
@@ -1675,7 +1677,7 @@ def Compute_PoreSize_PoreSpy(dict_pp, dict_sample, dict_user):
             ax3.set_title('Bar Plot')
             fig.savefig('png/psf/psi_'+str(iteration)+'.png')
             plt.close(fig)
- 
+
             data = porespy.metrics.pore_size_distribution(im=M_matter)
             fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=[10, 4])
             ax1.plot(data.bin_centers,data.pdf)
