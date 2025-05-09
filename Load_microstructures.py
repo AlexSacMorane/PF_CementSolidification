@@ -410,7 +410,7 @@ def Interpolate_Mechanical_Props(dict_pp):
     Interpolate the mechanical properties from loading tests:
         - Young Modulus Y
         - Shear Modulus G
-    Interpolalate the mechanical properties from relations:
+    Interpolate the mechanical properties from relations:
         - Poisson ratio v = Y/2G - 1
         - Bulk Modulus K = E/(3(1-2v))
     '''
