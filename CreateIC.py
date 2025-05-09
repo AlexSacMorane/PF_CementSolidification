@@ -59,7 +59,7 @@ def check_overlap(L_radius_grains, L_pos_grains, L_radius_grains_virtual, L_pos_
 
 def compute_virtual(dict_user, L_pos_grains, L_radius_grains_step):
     '''
-    Compute virtual grains with the perriodic conditions.
+    Compute virtual grains with the periodic conditions.
     '''
     L_pos_grains_virtual = []
     L_radius_grains_virtual = []
